@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public static class MeshGenerator {
-  public static MeshData generateTerrainMesh(float[,] heightmap, float heightMultiplier, AnimationCurve meshHeightCurve, int levelOfDetail) {
-    AnimationCurve heightCurve = new AnimationCurve(meshHeightCurve.keys);
+
+
+  public static MeshData generateTerrainMesh(float[,] heightmap, MeshSettings meshSettings, int levelOfDetail) {
 
     int meshSimplificationIncrement = (levelOfDetail == 0) ? 1 : levelOfDetail * 2;
 
@@ -43,8 +44,8 @@ public static class MeshGenerator {
       for (int x = 0; x < borderedSize; x += meshSimplificationIncrement) {
         int vertexIndex = vertexIndicesMap[x, y];
         Vector2 percent = new Vector2((x - meshSimplificationIncrement) / (float)meshSize, (y - meshSimplificationIncrement) / (float)meshSize);
-        float height = heightCurve.Evaluate(heightmap[x, y]) * heightMultiplier;
-        Vector3 vertexPosition = new Vector3(topLeftX + percent.x * meshSizeUnsimplified, height, topLeftZ - percent.y * meshSizeUnsimplified);
+        float height = heightmap[x, y];
+        Vector3 vertexPosition = new Vector3((topLeftX + percent.x * meshSizeUnsimplified) * meshSettings.meshScale, height, (topLeftZ - percent.y * meshSizeUnsimplified) * meshSettings.meshScale);
 
         meshData.addVertex(vertexPosition, percent, vertexIndex);
 

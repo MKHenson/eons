@@ -11,7 +11,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{4CF5E041-2ED8-0D36-E6E6-2878AA59D1EA}</ProjectGuid>
+    <ProjectGuid>{C44BA812-22C0-FA06-9D6C-E2F4FFEE3F82}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -62,12 +62,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Assets\Scripts\Data\NoiseData.cs" />
-    <Compile Include="Assets\Scripts\Data\TerrainData.cs" />
+    <Compile Include="Assets\Scripts\Data\HeightMapSettings.cs" />
+    <Compile Include="Assets\Scripts\Data\MeshSettings.cs" />
     <Compile Include="Assets\Scripts\Data\TextureData.cs" />
     <Compile Include="Assets\Scripts\Data\UpdatableData.cs" />
     <Compile Include="Assets\Scripts\EndlessTerrain.cs" />
     <Compile Include="Assets\Scripts\FalloffGenerator.cs" />
+    <Compile Include="Assets\Scripts\HeightMapGenerator.cs" />
     <Compile Include="Assets\Scripts\HideOnPlay.cs" />
     <Compile Include="Assets\Scripts\MapDisplay.cs" />
     <Compile Include="Assets\Scripts\MapGenerator.cs" />
@@ -76,25 +77,25 @@
     <Compile Include="Assets\Scripts\TextureGenerator.cs" />
     <None Include="Assets\Scripts\Terrain.shader" />
     <Reference Include="Unity.Timeline.Editor">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.Timeline.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro.Editor">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.TextMeshPro.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.PackageManagerUI.Editor">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.PackageManagerUI.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Timeline">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.Timeline.dll</HintPath>
     </Reference>
     <Reference Include="Unity.CollabProxy.Editor">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.CollabProxy.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.TextMeshPro">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.TextMeshPro.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.DataPrivacy">
-      <HintPath>D:/projects/unity/Eons/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/ScriptAssemblies/Unity.Analytics.DataPrivacy.dll</HintPath>
     </Reference>
     <Reference Include="UnityEngine.AIModule">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.1.2f1/Editor/Data/Managed/UnityEngine/UnityEngine.AIModule.dll</HintPath>
@@ -280,13 +281,13 @@
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.1.2f1/Editor/Data/UnityExtensions/Unity/TestRunner/net35/unity-custom/nunit.framework.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.Editor">
-      <HintPath>D:/projects/unity/Eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.Editor.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.Editor.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.StandardEvents">
-      <HintPath>D:/projects/unity/Eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.StandardEvents.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.StandardEvents.dll</HintPath>
     </Reference>
     <Reference Include="Unity.Analytics.Tracker">
-      <HintPath>D:/projects/unity/Eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.Tracker.dll</HintPath>
+      <HintPath>D:/projects/unity/eons/Library/PackageCache/com.unity.analytics@3.3.2/Unity.Analytics.Tracker.dll</HintPath>
     </Reference>
     <Reference Include="netstandard">
       <HintPath>C:/Program Files/Unity/Hub/Editor/2019.1.2f1/Editor/Data/NetStandard/ref/2.0.0/netstandard.dll</HintPath>
@@ -636,7 +637,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="Assembly-CSharp-firstpass.csproj">
-      <Project>{09933735-0C99-6452-8B39-EE41F28DDAF4}</Project>
+      <Project>{801D364C-913C-55A1-2D61-7BFEFCBAEF56}</Project>
       <Name>Assembly-CSharp-firstpass</Name>
     </ProjectReference>
   </ItemGroup>
