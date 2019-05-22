@@ -16,7 +16,7 @@ public class MeshSettings : UpdatableData {
 
   public int numVerticesPerLine {
     get {
-      return supportedChunkSizes[chunkSizeIndex] + 1;
+      return supportedChunkSizes[chunkSizeIndex] + 5;
     }
   }
 
