@@ -19,7 +19,7 @@ public class MapPreview : MonoBehaviour {
   [Range(0, MeshSettings.numSupportedLODs - 1)]
   public int editorPreviewLOD;
   public bool autoUpdate;
-  
+
   public void drawMapInEditor() {
     textureData.applyToMaterial(terrainMaterial);
     textureData.updateMeshHeights(terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
@@ -29,17 +29,16 @@ public class MapPreview : MonoBehaviour {
       drawTexture(TextureGenerator.textureFromHeightmap(heightMap));
     else if (drawMode == DrawMode.Mesh) {
       if (heightMapSettings.useFalloff) {
-        float [,] falloff = FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine);
+        float[,] falloff = FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine);
         for (int i = 0; i < heightMap.values.GetLength(0); i++)
           for (int j = 0; j < heightMap.values.GetLength(1); j++)
             heightMap.values[i, j] = heightMap.values[i, j] * (1 - falloff[i, j]);
       }
       drawMesh(MeshGenerator.generateTerrainMesh(heightMap.values, meshSettings, editorPreviewLOD));
-    }
-    else if (drawMode == DrawMode.Falloff)
+    } else if (drawMode == DrawMode.Falloff)
       drawTexture(TextureGenerator.textureFromHeightmap(new HeightMap(FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine), 0, 1)));
   }
-  
+
   public void drawTexture(Texture2D texture) {
     textureRenderer.sharedMaterial.mainTexture = texture;
     textureRenderer.transform.localScale = new Vector3(texture.width, 1, texture.height) / 10f;

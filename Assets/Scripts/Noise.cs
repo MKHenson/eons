@@ -5,6 +5,9 @@ public static class Noise {
 
   public enum NormalizeMode { Local, Global };
 
+  /// <summary>
+  /// Returns a float array with the noise values mapped to 0 to 1
+  /// </summary>
   public static float[,] generateNoiseMap(int mapWidth, int mapHeight, NoiseSettings settings, Vector2 sampleCenter) {
     float[,] noiseMap = new float[mapWidth, mapHeight];
 

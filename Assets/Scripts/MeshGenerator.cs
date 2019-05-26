@@ -18,24 +18,23 @@ public static class MeshGenerator {
     int meshVertexIndex = 0;
     int outOfMeshVertexIndex = -1;
 
-    for (int y = 0; y < numVertsPerLine; y ++) {
-      for (int x = 0; x < numVertsPerLine; x ++) {
+    for (int y = 0; y < numVertsPerLine; y++) {
+      for (int x = 0; x < numVertsPerLine; x++) {
         bool isOutOfMeshVertex = y == 0 || y == numVertsPerLine - 1 || x == 0 || x == numVertsPerLine - 1;
-        bool isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && ( (x-2) % skipIncrement != 0 || (y - 2)% skipIncrement != 0 );
+        bool isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
 
         if (isOutOfMeshVertex) {
           vertexIndicesMap[x, y] = outOfMeshVertexIndex;
           outOfMeshVertexIndex--;
-        }
-        else if ( !isSkippedVertex ) {
+        } else if (!isSkippedVertex) {
           vertexIndicesMap[x, y] = meshVertexIndex;
           meshVertexIndex++;
         }
       }
     }
 
-    for (int y = 0; y < numVertsPerLine; y ++) {
-      for (int x = 0; x < numVertsPerLine; x ++) {
+    for (int y = 0; y < numVertsPerLine; y++) {
+      for (int x = 0; x < numVertsPerLine; x++) {
         bool isSkippedVertex = x > 2 && x < numVertsPerLine - 3 && y > 2 && y < numVertsPerLine - 3 && ((x - 2) % skipIncrement != 0 || (y - 2) % skipIncrement != 0);
 
         if (!isSkippedVertex) {
@@ -50,7 +49,7 @@ public static class MeshGenerator {
           Vector2 vertexPosition2D = topLeft + new Vector2(percent.x, -percent.y) * meshSettings.meshWorldSize;
           float height = heightmap[x, y];
 
-          if ( isEdgeConnectionVertex ) {
+          if (isEdgeConnectionVertex) {
             bool isVerticle = x == 2 || x == numVertsPerLine - 3;
             int dstToMainVertexA = (isVerticle ? y - 2 : x - 2) % skipIncrement;
             int dstToMainVertexB = skipIncrement - dstToMainVertexA;
@@ -62,7 +61,7 @@ public static class MeshGenerator {
             height = heightMainVertexA * (1 - dstPercentFromAToB) + heightMainVertexB * dstPercentFromAToB;
           }
 
-          meshData.addVertex( new Vector3( vertexPosition2D.x, height, vertexPosition2D.y ), percent, vertexIndex);
+          meshData.addVertex(new Vector3(vertexPosition2D.x, height, vertexPosition2D.y), percent, vertexIndex);
 
           bool createTriangle = x < numVertsPerLine - 1 && y < numVertsPerLine - 1 && (!isEdgeConnectionVertex || (x != 2 && y != 2));
 
@@ -123,8 +122,7 @@ public class MeshData {
   public void addVertex(Vector3 vertexPosition, Vector2 uv, int vertexIndex) {
     if (vertexIndex < 0) {
       outOfMeshVertices[-vertexIndex - 1] = vertexPosition;
-    }
-    else {
+    } else {
       vertices[vertexIndex] = vertexPosition;
       uvs[vertexIndex] = uv;
     }
@@ -136,8 +134,7 @@ public class MeshData {
       outOfMeshTriangles[outOfMeshTriangleIndex + 1] = b;
       outOfMeshTriangles[outOfMeshTriangleIndex + 2] = c;
       outOfMeshTriangleIndex += 3;
-    }
-    else {
+    } else {
       triangles[triangleIndex] = a;
       triangles[triangleIndex + 1] = b;
       triangles[triangleIndex + 2] = c;

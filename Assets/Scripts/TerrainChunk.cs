@@ -18,13 +18,13 @@ public class TerrainChunk {
   LODInfo[] detailLevels;
   LODMesh[] lodMeshes;
   int colliderLODIndex;
-  
+
   HeightMap heightmap;
   bool heightMapReceived;
   int previousLODIndex = -1;
   bool hasSetCollider;
   float maxViewDst;
-  
+
   HeightMapSettings heightMapSettings;
   MeshSettings meshSettings;
   Transform viewer;
@@ -96,8 +96,7 @@ public class TerrainChunk {
         for (int i = 0; i < detailLevels.Length - 1; i++) {
           if (viewerDstFromNearestEdge > detailLevels[i].visibleDstThreshold) {
             lodIndex = i + 1;
-          }
-          else {
+          } else {
             break;
           }
         }
@@ -107,8 +106,7 @@ public class TerrainChunk {
           if (lodMesh.hasMesh) {
             previousLODIndex = lodIndex;
             meshFilter.mesh = lodMesh.mesh;
-          }
-          else if (!lodMesh.hasRequestedMesh) {
+          } else if (!lodMesh.hasRequestedMesh) {
             lodMesh.requestMesh(heightmap, meshSettings, heightMapSettings);
           }
         }
@@ -180,6 +178,6 @@ public class LODMesh {
           heightMap.values[i, j] = heightMap.values[i, j] * (1 - falloff[i, j]);
     }
 
-      ThreadedDataRequester.requestData(() => MeshGenerator.generateTerrainMesh(heightMap.values, meshSettings, lod), onMeshDataReceived);
+    ThreadedDataRequester.requestData(() => MeshGenerator.generateTerrainMesh(heightMap.values, meshSettings, lod), onMeshDataReceived);
   }
 }

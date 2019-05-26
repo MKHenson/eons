@@ -26,7 +26,7 @@ public class ThreadedDataRequester : MonoBehaviour {
     lock (dataQueue) {
       dataQueue.Enqueue(new ThreadInfo(callback, data));
     }
-  }  
+  }
 
   void Update() {
     if (dataQueue.Count > 0) {

@@ -70,10 +70,9 @@ public class TerrainGenerator : MonoBehaviour {
         if (!alreadyUpdatedChunkCoords.Contains(viewedChunkCoord)) {
           if (terrainChunkDictionary.ContainsKey(viewedChunkCoord)) {
             terrainChunkDictionary[viewedChunkCoord].updateTerrainChunk();
-          }
-          else {
+          } else {
             TerrainChunk newChunk = new TerrainChunk(viewedChunkCoord, heightMapSettings, meshSettings, detailLevels, colliderLODIndex, transform, viewer, mapMaterial);
-            terrainChunkDictionary.Add(viewedChunkCoord, newChunk );
+            terrainChunkDictionary.Add(viewedChunkCoord, newChunk);
 
             newChunk.onVisibilityChanged += onTerrainChunkVisibilityChanged;
             newChunk.load();
