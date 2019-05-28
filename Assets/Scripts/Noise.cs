@@ -76,6 +76,63 @@ public static class Noise {
 
     return noiseMap;
   }
+
+  /// <summary>
+  /// Returns a float array with the noise values mapped to 0 to 1
+  /// </summary>
+  public static float getNoiseAt(int x, int y, NoiseSettings settings) {
+    System.Random prng = new System.Random(settings.seed);
+    Vector2[] octaveOffsets = new Vector2[settings.octaves];
+
+    float maxPossibleHeight = 0;
+    float amplitude = 1;
+    float frequency = 1;
+
+    for (int i = 0; i < settings.octaves; i++) {
+      float offsetX = prng.Next(-100000, 100000) + settings.offset.x + x;
+      float offsetY = prng.Next(-100000, 100000) - settings.offset.y - y;
+      octaveOffsets[i] = new Vector2(offsetX, offsetY);
+
+      maxPossibleHeight += amplitude;
+      amplitude *= settings.persistance;
+    }
+
+    float maxLocalNoiseHeight = float.MinValue;
+    float minLocalNoiseHeight = float.MaxValue;
+
+    amplitude = 1;
+    frequency = 1;
+    float noiseHeight = 0;
+
+    for (int i = 0; i < settings.octaves; i++) {
+      float sampleX = octaveOffsets[i].x / settings.scale * frequency;
+      float sampleY = octaveOffsets[i].y / settings.scale * frequency;
+
+      float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1;
+      noiseHeight += perlinValue * amplitude;
+
+      amplitude *= settings.persistance;
+      frequency *= settings.lacunarity;
+    }
+
+    if (noiseHeight > maxLocalNoiseHeight)
+      maxLocalNoiseHeight = noiseHeight;
+
+    if (noiseHeight < minLocalNoiseHeight)
+      minLocalNoiseHeight = noiseHeight;
+
+    float noiseVal = noiseHeight;
+
+    if (settings.normalizeMode == NormalizeMode.Global) {
+      float normalizedHeight = (noiseVal + 1) / maxPossibleHeight;
+      noiseVal = Mathf.Clamp(normalizedHeight, 0, int.MaxValue);
+    }
+
+    if (settings.normalizeMode == NormalizeMode.Local)
+      noiseVal = Mathf.InverseLerp(minLocalNoiseHeight, maxLocalNoiseHeight, noiseVal);
+
+    return noiseVal;
+  }
 }
 
 [System.Serializable]

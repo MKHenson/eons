@@ -4,13 +4,15 @@ using System;
 
 [CustomEditor(typeof(WorldGenerator))]
 public class WorldGeneratorEditor : Editor {
-  enum PreviewMode { Geography, Temperature, Rainfall };
+  enum PreviewMode { Geography, Temperature, Rainfall, Biome };
   static int WORLD_SIZE = 16;
   static int PREVIEW_SIZE = 256;
 
   Texture2D geographyMap;
   Texture2D temperatureMap;
   Texture2D rainfallMap;
+  Texture2D biomeMap;
+
   int previewMode;
   bool showPreview;
   Vector2Int worldPos;
@@ -37,52 +39,62 @@ public class WorldGeneratorEditor : Editor {
       Color[] geographyColors = new Color[WORLD_SIZE * WORLD_SIZE];
       Color[] temperatureColors = new Color[WORLD_SIZE * WORLD_SIZE];
       Color[] rainfallColors = new Color[WORLD_SIZE * WORLD_SIZE];
+      Color[] biomeColors = new Color[WORLD_SIZE * WORLD_SIZE];
 
       for (int y = 0; y < WORLD_SIZE; y++)
         for (int x = 0; x < WORLD_SIZE; x++) {
           float height = heightValues[x, y];
-          float tempNoise = tempValues[x, y];
-          float rainfallNoise = rainfall[x, y];
-          float temperature = tempNoise;
+          float temperature = mapPreview.getTemp(tempValues[x, y], height);
+          float rianfall = rainfall[x, y];
 
-          geographyColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, Color.white, height);
+          BiomeType biomeType = mapPreview.getBiomeType(temperature, rianfall, height);
+          Color biomeColor;
 
+          if (biomeType == BiomeType.DeepOcean)
+            biomeColor = new Color(0, 0, 0.7f);
+          else if (biomeType == BiomeType.Ocean)
+            biomeColor = new Color(0, 0, 1f);
+          else if (biomeType == BiomeType.Dessert)
+            biomeColor = new Color(1f, 1f, 0);
+          else if (biomeType == BiomeType.Grassland)
+            biomeColor = new Color(0f, 0.6f, 0);
+          else if (biomeType == BiomeType.Jungle)
+            biomeColor = new Color(0.0f, 0.3f, 0.0f);
+          else if (biomeType == BiomeType.TemperateForest)
+            biomeColor = new Color(0.0f, 0.6f, 0.6f);
+          else if (biomeType == BiomeType.SnowyPeaks)
+            biomeColor = new Color(0.9f, 0.9f, 0.9f);
+          else // Mountains
+            biomeColor = new Color(0.7f, 0.6f, 0.3f);
+
+
+          biomeColors[y * WORLD_SIZE + x] = biomeColor;
 
           if (height <= mapPreview.seaLevel) {
-            geographyColors[y * WORLD_SIZE + x] = new Color(0, 0, 1);
+            geographyColors[y * WORLD_SIZE + x] = Color.blue;
             rainfallColors[y * WORLD_SIZE + x] = Color.blue;
-            temperature = temperature * height;
-
           } else {
-            float heightCooling = height - mapPreview.seaLevel; // Higher values means higher
-            temperature -= (heightCooling) * mapPreview.heightCoolingFactor;
-            rainfallColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, new Color(0, 0, 1), rainfallNoise);
+            geographyColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, Color.white, height);
+            rainfallColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, Color.blue, rianfall);
           }
 
-          temperature = Mathf.Clamp01(temperature);
-
           if (temperature <= 0.5f)
-            temperatureColors[y * WORLD_SIZE + x] = Color.Lerp(new Color(0, 0, 1), Color.yellow, Mathf.InverseLerp(0, 0.5f, temperature));
+            temperatureColors[y * WORLD_SIZE + x] = Color.Lerp(Color.blue, Color.yellow, Mathf.InverseLerp(0, 0.5f, temperature));
           else
             temperatureColors[y * WORLD_SIZE + x] = Color.Lerp(Color.yellow, Color.red, Mathf.InverseLerp(0.5f, 1, temperature));
-
-
-
         }
 
-      // Mark indicator
-      int worldX = Mathf.Clamp(worldPos.x, 0, WORLD_SIZE - 1);
-      int worldY = Mathf.Clamp(worldPos.y, 0, WORLD_SIZE - 1);
+      int halfWorld = (WORLD_SIZE / 2);
 
-
-      geographyColors[worldY * WORLD_SIZE + worldX] = new Color(0, 1, 0);
-      temperatureColors[worldY * WORLD_SIZE + worldX] = new Color(0, 1, 0);
-      rainfallColors[worldY * WORLD_SIZE + worldX] = new Color(0, 1, 0);
-
+      geographyColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
+      temperatureColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
+      rainfallColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
+      biomeColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
 
       geographyMap = TextureGenerator.textureFromColormap(geographyColors, WORLD_SIZE, WORLD_SIZE);
       temperatureMap = TextureGenerator.textureFromColormap(temperatureColors, WORLD_SIZE, WORLD_SIZE);
       rainfallMap = TextureGenerator.textureFromColormap(rainfallColors, WORLD_SIZE, WORLD_SIZE);
+      biomeMap = TextureGenerator.textureFromColormap(biomeColors, WORLD_SIZE, WORLD_SIZE);
     }
   }
 
@@ -116,13 +128,20 @@ public class WorldGeneratorEditor : Editor {
         EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), geographyMap, null, ScaleMode.ScaleToFit);
       else if (previewMode == (int)PreviewMode.Temperature)
         EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), temperatureMap, null, ScaleMode.ScaleToFit);
+      else if (previewMode == (int)PreviewMode.Biome)
+        EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), biomeMap, null, ScaleMode.ScaleToFit);
       else
         EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), rainfallMap, null, ScaleMode.ScaleToFit);
 
+      BiomeData biom = mapPreview.queryBiomAt(worldPos.x, worldPos.y, WORLD_SIZE);
 
       GUILayout.BeginVertical();
-      worldPos = EditorGUILayout.Vector2IntField("Sample Biome", worldPos);
-      GUILayout.Label("We seem to be at " + worldPos.x);
+      worldPos = EditorGUILayout.Vector2IntField("Tile Position", worldPos);
+      GUILayout.Label("Biome Class: " + Enum.GetName(typeof(BiomeType), biom.biomeType));
+      GUILayout.Label("Geography Class: " + Enum.GetName(typeof(GeographyType), biom.geographyType));
+      GUILayout.Label("Height: " + biom.height);
+      GUILayout.Label("Temperature: " + biom.temperature);
+      GUILayout.Label("Rainfall: " + biom.rainfall);
       GUILayout.EndVertical();
 
 
