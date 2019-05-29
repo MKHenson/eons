@@ -7,6 +7,8 @@ public class WorldGenerator : MonoBehaviour {
   public NoiseSettings temperature;
   public NoiseSettings rainfall;
 
+  public BiomeSettings[] biomes;
+
   [Range(0, 1)]
   public float seaLevel;
 
@@ -15,6 +17,21 @@ public class WorldGenerator : MonoBehaviour {
 
   void OnValidate() {
 
+  }
+
+  public void load(HeightMapSettings settings) {
+    for (int i = 0; i < biomes.Length; i++) {
+      biomes[i].textureSettings.applyToMaterial(biomes[i].material);
+      biomes[i].textureSettings.updateMeshHeights(biomes[i].material, settings.minHeight, settings.maxHeight);
+    }
+  }
+
+  public Material getMaterialForBiome(BiomeData biome) {
+    for (int i = 0; i < biomes.Length; i++)
+      if (biomes[i].type == biome.biomeType)
+        return biomes[i].material;
+
+    return biomes[0].material;
   }
 
   public Texture2D generateGeographyMap(Vector2Int worldPos, int size) {
@@ -60,16 +77,21 @@ public class WorldGenerator : MonoBehaviour {
     } else if (height <= seaLevel) {
       biomeType = BiomeType.Ocean;
     } else if (height <= seaLevel + ((1 - seaLevel) / 2)) {
-      if (rainfall < 0.5f) {
-        if (temperature < 0.7f)
+
+      if (temperature < 0.3f) {
+        if (rainfall < 0.5f)
           biomeType = BiomeType.Grassland;
         else
-          biomeType = BiomeType.Dessert;
-      } else {
-        if (temperature < 0.6f)
           biomeType = BiomeType.TemperateForest;
+      } else if (temperature < 0.6f) {
+        if (rainfall < 0.4f)
+          biomeType = BiomeType.Grassland;
         else
           biomeType = BiomeType.Jungle;
+      } else if (temperature < 0.8f) {
+        biomeType = BiomeType.Grassland;
+      } else {
+        biomeType = BiomeType.Dessert;
       }
     } else {
       if (height < 0.85f)
@@ -100,10 +122,10 @@ public class WorldGenerator : MonoBehaviour {
   public BiomeData queryBiomAt(int x, int y, int size) {
     BiomeData toReturn = new BiomeData();
 
-    Vector2 center = new Vector2(x, y);
-    float[,] heights = Noise.generateNoiseMap(size, size, geography, center);
-    float[,] temps = Noise.generateNoiseMap(size, size, temperature, center);
-    float[,] rainfalls = Noise.generateNoiseMap(size, size, rainfall, center);
+    toReturn.location = new Vector2(x, y);
+    float[,] heights = Noise.generateNoiseMap(size, size, geography, toReturn.location);
+    float[,] temps = Noise.generateNoiseMap(size, size, temperature, toReturn.location);
+    float[,] rainfalls = Noise.generateNoiseMap(size, size, rainfall, toReturn.location);
 
     int centerIndex = size / 2;
 
@@ -135,7 +157,15 @@ public enum BiomeType {
   SnowyPeaks
 }
 
-public struct BiomeData {
+[System.Serializable]
+public class BiomeSettings {
+  public Material material;
+  public TextureData textureSettings;
+  public BiomeType type;
+}
+
+public class BiomeData {
+  public Vector2 location;
   public GeographyType geographyType;
   public BiomeType biomeType;
   public float height;

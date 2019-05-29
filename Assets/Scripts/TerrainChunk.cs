@@ -25,12 +25,15 @@ public class TerrainChunk {
   bool hasSetCollider;
   float maxViewDst;
 
+  WorldGenerator worldGenerator;
   HeightMapSettings heightMapSettings;
   MeshSettings meshSettings;
   Transform viewer;
+  BiomeData biomeData;
 
-  public TerrainChunk(Vector2 coord, HeightMapSettings heightMapSettings, MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, Transform parent, Transform viewer, Material material) {
+  public TerrainChunk(Vector2 coord, WorldGenerator worldGenerator, HeightMapSettings heightMapSettings, MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, Transform parent, Transform viewer, Material material) {
     this.detailLevels = detailLevels;
+    this.worldGenerator = worldGenerator;
     this.colliderLODIndex = colliderLODIndex;
     this.coord = coord;
     this.heightMapSettings = heightMapSettings;
@@ -46,7 +49,7 @@ public class TerrainChunk {
     meshFilter = meshObject.AddComponent<MeshFilter>();
     meshCollider = meshObject.AddComponent<MeshCollider>();
 
-    meshRenderer.material = material;
+    // meshRenderer.material = material;
 
     meshObject.transform.position = new Vector3(position.x, 0, position.y);
     meshObject.transform.parent = parent;
@@ -67,6 +70,12 @@ public class TerrainChunk {
   }
 
   public void load() {
+    ThreadedDataRequester.requestData(() => worldGenerator.queryBiomAt((int)coord.x, (int)coord.y, 16), onBiomDataReceived);
+  }
+
+  void onBiomDataReceived(object biomeDataObject) {
+    biomeData = biomeDataObject as BiomeData;
+    meshRenderer.material = worldGenerator.getMaterialForBiome(biomeData);
     ThreadedDataRequester.requestData(() => HeightMapGenerator.generateHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightMapSettings, sampleCenter), onHeightMapReceived);
   }
 

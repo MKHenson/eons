@@ -17,6 +17,8 @@ public class TerrainGenerator : MonoBehaviour {
   public Transform viewer;
   public Material mapMaterial;
 
+  public WorldGenerator worldGenerator;
+
   Vector2 viewerPosition;
   Vector2 viewerPositionOld;
 
@@ -30,6 +32,8 @@ public class TerrainGenerator : MonoBehaviour {
 
     textureSettings.applyToMaterial(mapMaterial);
     textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
+
+    worldGenerator.load(heightMapSettings);
 
     float maxViewDst = detailLevels[detailLevels.Length - 1].visibleDstThreshold;
     meshWorldSize = meshSettings.meshWorldSize;
@@ -71,7 +75,7 @@ public class TerrainGenerator : MonoBehaviour {
           if (terrainChunkDictionary.ContainsKey(viewedChunkCoord)) {
             terrainChunkDictionary[viewedChunkCoord].updateTerrainChunk();
           } else {
-            TerrainChunk newChunk = new TerrainChunk(viewedChunkCoord, heightMapSettings, meshSettings, detailLevels, colliderLODIndex, transform, viewer, mapMaterial);
+            TerrainChunk newChunk = new TerrainChunk(viewedChunkCoord, worldGenerator, heightMapSettings, meshSettings, detailLevels, colliderLODIndex, transform, viewer, mapMaterial);
             terrainChunkDictionary.Add(viewedChunkCoord, newChunk);
 
             newChunk.onVisibilityChanged += onTerrainChunkVisibilityChanged;

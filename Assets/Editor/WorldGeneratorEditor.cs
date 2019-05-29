@@ -5,7 +5,8 @@ using System;
 [CustomEditor(typeof(WorldGenerator))]
 public class WorldGeneratorEditor : Editor {
   enum PreviewMode { Geography, Temperature, Rainfall, Biome };
-  static int WORLD_SIZE = 16;
+  enum PreviewSize { Small, Medium, Large };
+
   static int PREVIEW_SIZE = 256;
 
   Texture2D geographyMap;
@@ -13,6 +14,8 @@ public class WorldGeneratorEditor : Editor {
   Texture2D rainfallMap;
   Texture2D biomeMap;
 
+  int previewSize;
+  int previewSizePixels = 16;
   int previewMode;
   bool showPreview;
   Vector2Int worldPos;
@@ -29,25 +32,25 @@ public class WorldGeneratorEditor : Editor {
   /// Redraws the preview texture
   /// </summary>
   private void updatePreview() {
-    WorldGenerator mapPreview = target as WorldGenerator;
-    if (mapPreview.temperature != null) {
+    WorldGenerator worldGenerator = target as WorldGenerator;
+    if (worldGenerator.temperature != null) {
       // Generate the height values
-      float[,] heightValues = Noise.generateNoiseMap(WORLD_SIZE, WORLD_SIZE, mapPreview.geography, new Vector2(worldPos.x, worldPos.y));
-      float[,] tempValues = Noise.generateNoiseMap(WORLD_SIZE, WORLD_SIZE, mapPreview.temperature, new Vector2(worldPos.x, worldPos.y));
-      float[,] rainfall = Noise.generateNoiseMap(WORLD_SIZE, WORLD_SIZE, mapPreview.rainfall, new Vector2(worldPos.x, worldPos.y));
+      float[,] heightValues = Noise.generateNoiseMap(previewSizePixels, previewSizePixels, worldGenerator.geography, new Vector2(worldPos.x, worldPos.y));
+      float[,] tempValues = Noise.generateNoiseMap(previewSizePixels, previewSizePixels, worldGenerator.temperature, new Vector2(worldPos.x, worldPos.y));
+      float[,] rainfall = Noise.generateNoiseMap(previewSizePixels, previewSizePixels, worldGenerator.rainfall, new Vector2(worldPos.x, worldPos.y));
 
-      Color[] geographyColors = new Color[WORLD_SIZE * WORLD_SIZE];
-      Color[] temperatureColors = new Color[WORLD_SIZE * WORLD_SIZE];
-      Color[] rainfallColors = new Color[WORLD_SIZE * WORLD_SIZE];
-      Color[] biomeColors = new Color[WORLD_SIZE * WORLD_SIZE];
+      Color[] geographyColors = new Color[previewSizePixels * previewSizePixels];
+      Color[] temperatureColors = new Color[previewSizePixels * previewSizePixels];
+      Color[] rainfallColors = new Color[previewSizePixels * previewSizePixels];
+      Color[] biomeColors = new Color[previewSizePixels * previewSizePixels];
 
-      for (int y = 0; y < WORLD_SIZE; y++)
-        for (int x = 0; x < WORLD_SIZE; x++) {
+      for (int y = 0; y < previewSizePixels; y++)
+        for (int x = 0; x < previewSizePixels; x++) {
           float height = heightValues[x, y];
-          float temperature = mapPreview.getTemp(tempValues[x, y], height);
+          float temperature = worldGenerator.getTemp(tempValues[x, y], height);
           float rianfall = rainfall[x, y];
 
-          BiomeType biomeType = mapPreview.getBiomeType(temperature, rianfall, height);
+          BiomeType biomeType = worldGenerator.getBiomeType(temperature, rianfall, height);
           Color biomeColor;
 
           if (biomeType == BiomeType.DeepOcean)
@@ -68,33 +71,33 @@ public class WorldGeneratorEditor : Editor {
             biomeColor = new Color(0.7f, 0.6f, 0.3f);
 
 
-          biomeColors[y * WORLD_SIZE + x] = biomeColor;
+          biomeColors[y * previewSizePixels + x] = biomeColor;
 
-          if (height <= mapPreview.seaLevel) {
-            geographyColors[y * WORLD_SIZE + x] = Color.blue;
-            rainfallColors[y * WORLD_SIZE + x] = Color.blue;
+          if (height <= worldGenerator.seaLevel) {
+            geographyColors[y * previewSizePixels + x] = Color.blue;
+            rainfallColors[y * previewSizePixels + x] = Color.blue;
           } else {
-            geographyColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, Color.white, height);
-            rainfallColors[y * WORLD_SIZE + x] = Color.Lerp(Color.black, Color.blue, rianfall);
+            geographyColors[y * previewSizePixels + x] = Color.Lerp(Color.black, Color.white, height);
+            rainfallColors[y * previewSizePixels + x] = Color.Lerp(Color.black, Color.blue, rianfall);
           }
 
           if (temperature <= 0.5f)
-            temperatureColors[y * WORLD_SIZE + x] = Color.Lerp(Color.blue, Color.yellow, Mathf.InverseLerp(0, 0.5f, temperature));
+            temperatureColors[y * previewSizePixels + x] = Color.Lerp(Color.blue, Color.yellow, Mathf.InverseLerp(0, 0.5f, temperature));
           else
-            temperatureColors[y * WORLD_SIZE + x] = Color.Lerp(Color.yellow, Color.red, Mathf.InverseLerp(0.5f, 1, temperature));
+            temperatureColors[y * previewSizePixels + x] = Color.Lerp(Color.yellow, Color.red, Mathf.InverseLerp(0.5f, 1, temperature));
         }
 
-      int halfWorld = (WORLD_SIZE / 2);
+      int halfWorld = (previewSizePixels / 2);
 
-      geographyColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
-      temperatureColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
-      rainfallColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
-      biomeColors[halfWorld * WORLD_SIZE + halfWorld] = new Color(0, 1, 0);
+      geographyColors[halfWorld * previewSizePixels + halfWorld] = new Color(0, 1, 0);
+      temperatureColors[halfWorld * previewSizePixels + halfWorld] = new Color(0, 1, 0);
+      rainfallColors[halfWorld * previewSizePixels + halfWorld] = new Color(0, 1, 0);
+      biomeColors[halfWorld * previewSizePixels + halfWorld] = new Color(0, 1, 0);
 
-      geographyMap = TextureGenerator.textureFromColormap(geographyColors, WORLD_SIZE, WORLD_SIZE);
-      temperatureMap = TextureGenerator.textureFromColormap(temperatureColors, WORLD_SIZE, WORLD_SIZE);
-      rainfallMap = TextureGenerator.textureFromColormap(rainfallColors, WORLD_SIZE, WORLD_SIZE);
-      biomeMap = TextureGenerator.textureFromColormap(biomeColors, WORLD_SIZE, WORLD_SIZE);
+      geographyMap = TextureGenerator.textureFromColormap(geographyColors, previewSizePixels, previewSizePixels);
+      temperatureMap = TextureGenerator.textureFromColormap(temperatureColors, previewSizePixels, previewSizePixels);
+      rainfallMap = TextureGenerator.textureFromColormap(rainfallColors, previewSizePixels, previewSizePixels);
+      biomeMap = TextureGenerator.textureFromColormap(biomeColors, previewSizePixels, previewSizePixels);
     }
   }
 
@@ -112,6 +115,16 @@ public class WorldGeneratorEditor : Editor {
     if (showPreview) {
       string[] options = Enum.GetNames(typeof(PreviewMode));
       previewMode = EditorGUILayout.Popup("World Preview Type", previewMode, options);
+
+      string[] previewSizeOptions = Enum.GetNames(typeof(PreviewSize));
+      previewSize = EditorGUILayout.Popup("World Preview Size", previewSize, previewSizeOptions);
+
+      if (previewSize == (int)PreviewSize.Small)
+        previewSizePixels = 16;
+      else if (previewSize == (int)PreviewSize.Medium)
+        previewSizePixels = 32;
+      else if (previewSize == (int)PreviewSize.Large)
+        previewSizePixels = 64;
     }
 
 
@@ -121,6 +134,7 @@ public class WorldGeneratorEditor : Editor {
       EditorGUILayout.BeginHorizontal();
 
       // Set out an area for the texture
+      // float curWidth = EditorGUIUtility.currentViewWidth;
       Rect lastRect = GUILayoutUtility.GetRect(PREVIEW_SIZE, PREVIEW_SIZE);
 
       // Draw the texture
@@ -133,7 +147,7 @@ public class WorldGeneratorEditor : Editor {
       else
         EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), rainfallMap, null, ScaleMode.ScaleToFit);
 
-      BiomeData biom = mapPreview.queryBiomAt(worldPos.x, worldPos.y, WORLD_SIZE);
+      BiomeData biom = mapPreview.queryBiomAt(worldPos.x, worldPos.y, previewSizePixels);
 
       GUILayout.BeginVertical();
       worldPos = EditorGUILayout.Vector2IntField("Tile Position", worldPos);
