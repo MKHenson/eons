@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33068fc021dadc04dab6e00e4ff45c00, type: 3}
+  m_Name: OceanWaves
+  m_EditorClassIdentifier: 
+  _waveDirectionVariance: 180
+  _gravityScale: 0.37
+  _powerLog:
+  - -5.097386
+  - -4.1465406
+  - -4.0836005
+  - -3.6759686
+  - -3.2837274
+  - -2.2573016
+  - -1.5813627
+  - -1.2809455
+  - -6
+  - -0.59248936
+  - -3.734353
+  - -6
+  _powerDisabled: 000000000000000000000000
+  _chopScales:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  _gravityScales:
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  - 1
+  _chop: 2
+  _showAdvancedControls: 0
