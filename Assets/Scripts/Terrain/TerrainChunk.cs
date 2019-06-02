@@ -54,6 +54,13 @@ public class TerrainChunk {
     meshObject.transform.position = new Vector3(position.x, 0, position.y);
     meshObject.transform.parent = parent;
 
+
+    int layerIdx = LayerMask.NameToLayer("Terrain");
+    if (layerIdx == -1)
+      Debug.LogError("OceanDepthCache: Invalid layer specified: \"Terrain\". Please specify valid layers for objects/geometry that provide the ocean depth.");
+
+    meshObject.layer = layerIdx;
+
     setVisible(false);
 
     lodMeshes = new LODMesh[detailLevels.Length];

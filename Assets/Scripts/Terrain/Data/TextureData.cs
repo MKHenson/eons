@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using System.Linq;
 
 [CreateAssetMenu()]
@@ -18,9 +19,14 @@ public class TextureData : UpdatableData {
     material.SetFloatArray("baseBlends", layers.Select(x => x.blendStrength).ToArray());
     material.SetFloatArray("baseColorStrength", layers.Select(x => x.tintStrength).ToArray());
     material.SetFloatArray("baseTextureScales", layers.Select(x => x.textureScale).ToArray());
-    Texture2DArray texturesArray = generateTextureArray(layers.Select(x => x.texture).ToArray());
-    material.SetTexture("baseTextures", texturesArray);
+    Texture2D[] diffuse = layers.Select(x => x.texture).ToArray();
+    Texture2D[] normals = layers.Select(x => x.normal).ToArray();
+    Texture2D[] diffAndNormals = new Texture2D[diffuse.Length + normals.Length];
+    Array.Copy(diffuse, diffAndNormals, diffuse.Length);
+    Array.Copy(normals, 0, diffAndNormals, normals.Length, normals.Length);
 
+
+    material.SetTexture("baseTextures", generateTextureArray(diffAndNormals));
     updateMeshHeights(material, savedMinHeight, savedMaxHeight);
   }
 
@@ -46,6 +52,7 @@ public class TextureData : UpdatableData {
   [System.Serializable]
   public class Layer {
     public Texture2D texture;
+    public Texture2D normal;
     public Color tint;
     [Range(0, 1)]
     public float tintStrength;

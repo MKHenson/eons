@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using Crest;
 
 public class TerrainGenerator : MonoBehaviour {
 
@@ -25,10 +26,14 @@ public class TerrainGenerator : MonoBehaviour {
   float meshWorldSize;
   int chunksVisibleInViewDst;
 
+  public float targetTime = 5;
+
   Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
   List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
+  OceanDepthCache depthCache;
 
   private void Start() {
+    depthCache = GetComponentInChildren<OceanDepthCache>();
 
     textureSettings.applyToMaterial(mapMaterial);
     textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
@@ -42,8 +47,16 @@ public class TerrainGenerator : MonoBehaviour {
     updateVisibleChunks();
   }
 
+
   private void Update() {
     viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
+
+    targetTime -= Time.deltaTime;
+    if (targetTime <= 0.0f) {
+      targetTime = 10.0f;
+      depthCache.transform.position = viewer.position;
+      depthCache.PopulateCache();
+    }
 
     if (viewerPosition != viewerPositionOld) {
       foreach (TerrainChunk chunk in visibleTerrainChunks)

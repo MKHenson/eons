@@ -84,7 +84,7 @@ Material:
     - _CausticsDistortionScale: 10
     - _CausticsDistortionStrength: 0.075
     - _CausticsFocalDepth: 2
-    - _CausticsStrength: 6.04
+    - _CausticsStrength: 3.2
     - _CausticsTextureAverage: 0.07
     - _CausticsTextureScale: 5
     - _CompileShaderWithDebugInfo: 0
@@ -105,28 +105,28 @@ Material:
     - _FoamBubbleParallax: 0.05
     - _FoamScale: 10
     - _ForceUnderwater: 0
-    - _FresnelPower: 6.82
+    - _FresnelPower: 5
     - _Invert: 1
     - _MipBias: 0
     - _Moving: 0.17
-    - _NormalsScale: 9.6
-    - _NormalsStrength: 0.064
+    - _NormalsScale: 20
+    - _NormalsStrength: 0.28
     - _Offset: 0.00008
     - _PlanarReflections: 0
     - _ProceduralSky: 0
     - _RefractAmt: 0
-    - _RefractionStrength: 0.029
-    - _RefractiveIndexOfAir: 1.263
-    - _RefractiveIndexOfWater: 1.296
+    - _RefractionStrength: 0.1
+    - _RefractiveIndexOfAir: 1.3
+    - _RefractiveIndexOfWater: 1.333
     - _S: 1
     - _Shadows: 0
     - _ShorelineFoamMinDepth: 0.27
     - _SkyDirectionality: 0.875
     - _StartLevel: 0.157
     - _StencilFunction: 0
-    - _SubSurfaceBase: 0.224
+    - _SubSurfaceBase: 0.24
     - _SubSurfaceCrestColour: 1
-    - _SubSurfaceDepthMax: 13.8
+    - _SubSurfaceDepthMax: 9.4
     - _SubSurfaceDepthPower: 2.57
     - _SubSurfaceHeightLerp: 1
     - _SubSurfaceHeightMax: 24.9
@@ -154,16 +154,16 @@ Material:
     - _WaveFoamStart: 0
     - _WaveFoamStrength: 1
     m_Colors:
-    - _DepthFogDensity: {r: 0.6, g: 0.6, b: 0.6, a: 1}
-    - _Diffuse: {r: 0.5754717, g: 0.184189, b: 0, a: 1}
-    - _DiffuseShadow: {r: 0.31132078, g: 0.24008857, b: 0.17034534, a: 1}
+    - _DepthFogDensity: {r: 0.3, g: 0.22, b: 0.3, a: 1}
+    - _Diffuse: {r: 0, g: 0.0067332755, b: 0.35686275, a: 1}
+    - _DiffuseShadow: {r: 0.21067381, g: 0.26255617, b: 0.294, a: 1}
     - _FoamBubbleColor: {r: 0.6383055, g: 0.8301887, b: 0.8243741, a: 1}
     - _FoamWhiteColor: {r: 1, g: 0.99634784, b: 0.97199994, a: 0.6862745}
     - _SkyAwayFromSun: {r: 0.15419213, g: 0.22129796, b: 0.5372549, a: 1}
     - _SkyBase: {r: 0.55200005, g: 0.85242355, b: 1, a: 1}
     - _SkyTowardsSun: {r: 2.6390157, g: 1.8217498, b: 0.9236555, a: 1}
     - _SubSurface: {r: 0, g: 0.48, b: 0.36, a: 1}
-    - _SubSurfaceColour: {r: 0.1509434, g: 0.11267788, b: 0.081167676, a: 1}
+    - _SubSurfaceColour: {r: 0.10196078, g: 0.57254905, b: 0.5256646, a: 1}
     - _SubSurfaceCrestColour: {r: 0.42, g: 0.69, b: 0.52, a: 1}
     - _SubSurfaceShallowCol: {r: 0.552, g: 1, b: 1, a: 1}
     - _SubSurfaceShallowColShadow: {r: 0.14417942, g: 0.2264151, b: 0.21173015, a: 1}
