@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Crest;
@@ -7,6 +8,7 @@ public class TerrainGenerator : MonoBehaviour {
 
   const float viewerMoveThresholdForChunkUpdate = 25f;
   const float sqrViewerMoveThresholdForChunkUpdate = viewerMoveThresholdForChunkUpdate * viewerMoveThresholdForChunkUpdate;
+  public event Action onLoaded;
 
   public int colliderLODIndex;
   public LODInfo[] detailLevels;
@@ -26,15 +28,12 @@ public class TerrainGenerator : MonoBehaviour {
   float meshWorldSize;
   int chunksVisibleInViewDst;
 
-  public float targetTime = 5;
-
   Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
   List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
-  OceanDepthCache depthCache;
+
+  bool initialMeshesLoaded = false;
 
   private void Start() {
-    depthCache = GetComponentInChildren<OceanDepthCache>();
-
     textureSettings.applyToMaterial(mapMaterial);
     textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
 
@@ -51,13 +50,6 @@ public class TerrainGenerator : MonoBehaviour {
   private void Update() {
     viewerPosition = new Vector2(viewer.position.x, viewer.position.z);
 
-    targetTime -= Time.deltaTime;
-    if (targetTime <= 0.0f) {
-      targetTime = 10.0f;
-      depthCache.transform.position = viewer.position;
-      depthCache.PopulateCache();
-    }
-
     if (viewerPosition != viewerPositionOld) {
       foreach (TerrainChunk chunk in visibleTerrainChunks)
         chunk.updateCollisionMesh();
@@ -66,6 +58,20 @@ public class TerrainGenerator : MonoBehaviour {
     if ((viewerPositionOld - viewerPosition).sqrMagnitude > sqrViewerMoveThresholdForChunkUpdate) {
       viewerPositionOld = viewerPosition;
       updateVisibleChunks();
+    }
+
+    if (!initialMeshesLoaded) {
+      int numLoaded = 0;
+      foreach (TerrainChunk chunk in terrainChunkDictionary.Values) {
+        if (chunk.hasMesh)
+          numLoaded++;
+        if (numLoaded == chunksVisibleInViewDst * 2 * chunksVisibleInViewDst * 2) {
+          initialMeshesLoaded = true;
+
+          if (onLoaded != null)
+            onLoaded();
+        }
+      }
     }
   }
 

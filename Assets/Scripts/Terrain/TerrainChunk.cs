@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -74,6 +75,19 @@ public class TerrainChunk {
     }
 
     maxViewDst = detailLevels[detailLevels.Length - 1].visibleDstThreshold;
+  }
+
+  /// <summary>
+  /// Returns true if any of the lod's have a mesh loaded
+  /// </summary>
+  public bool hasMesh {
+    get {
+      for (int i = 0; i < lodMeshes.Length; i++)
+        if (lodMeshes[i].hasMesh)
+          return true;
+
+      return false;
+    }
   }
 
   public void load() {
