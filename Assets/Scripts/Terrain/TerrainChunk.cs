@@ -91,7 +91,7 @@ public class TerrainChunk {
   }
 
   public void load() {
-    ThreadedDataRequester.requestData(() => worldGenerator.queryBiomAt((int)coord.x, (int)coord.y, 16), onBiomDataReceived);
+    ThreadedDataRequester.requestData(() => worldGenerator.queryBiom((int)coord.x, (int)coord.y, 16), onBiomDataReceived);
   }
 
   void onBiomDataReceived(object biomeDataObject) {

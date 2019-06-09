@@ -103,7 +103,7 @@ public class WorldGenerator : MonoBehaviour {
     return biomeType;
   }
 
-  public GeographyType getGeographyType(float temperature, float rainfall, float height) {
+  public GeographyType getGeographyType(float height) {
     GeographyType geographyType;
 
     if (height <= seaLevel / 2) {
@@ -119,22 +119,30 @@ public class WorldGenerator : MonoBehaviour {
     return geographyType;
   }
 
-  public BiomeData queryBiomAt(int x, int y, int size) {
+  public BiomeData queryBiom(int x, int y, int size) {
+    Vector2 location = new Vector2(x, y);
+    float[,] heights = Noise.generateNoiseMap(size, size, geography, location);
+    float[,] temps = Noise.generateNoiseMap(size, size, temperature, location);
+    float[,] rainfalls = Noise.generateNoiseMap(size, size, rainfall, location);
+
+    BiomeData mainBiome = queryBiomAt(x, y, size, heights, temps, rainfalls);
+    mainBiome.location = location;
+    mainBiome.north = queryBiomAt(x, y - 1, size, heights, temps, rainfalls);
+    mainBiome.east = queryBiomAt(x + 1, y, size, heights, temps, rainfalls);
+    mainBiome.south = queryBiomAt(x, y + 1, size, heights, temps, rainfalls);
+    mainBiome.west = queryBiomAt(x + 1, y, size, heights, temps, rainfalls);
+
+    return mainBiome;
+  }
+
+  private BiomeData queryBiomAt(int x, int y, int size, float[,] heights, float[,] temps, float[,] rainfalls) {
     BiomeData toReturn = new BiomeData();
-
-    toReturn.location = new Vector2(x, y);
-    float[,] heights = Noise.generateNoiseMap(size, size, geography, toReturn.location);
-    float[,] temps = Noise.generateNoiseMap(size, size, temperature, toReturn.location);
-    float[,] rainfalls = Noise.generateNoiseMap(size, size, rainfall, toReturn.location);
-
     int centerIndex = size / 2;
-
     toReturn.height = heights[centerIndex, centerIndex];
     toReturn.temperature = getTemp(temps[centerIndex, centerIndex], toReturn.height);
     toReturn.rainfall = rainfalls[centerIndex, centerIndex];
     toReturn.biomeType = getBiomeType(toReturn.temperature, toReturn.rainfall, toReturn.height);
-    toReturn.geographyType = getGeographyType(toReturn.temperature, toReturn.rainfall, toReturn.height);
-
+    toReturn.geographyType = getGeographyType(toReturn.height);
     return toReturn;
   }
 }
@@ -171,4 +179,8 @@ public class BiomeData {
   public float height;
   public float temperature;
   public float rainfall;
+  public BiomeData north;
+  public BiomeData east;
+  public BiomeData south;
+  public BiomeData west;
 }

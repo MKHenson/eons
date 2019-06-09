@@ -147,7 +147,7 @@ public class WorldGeneratorEditor : Editor {
       else
         EditorGUI.DrawPreviewTexture(new Rect(lastRect.xMin, lastRect.yMin, PREVIEW_SIZE, PREVIEW_SIZE), rainfallMap, null, ScaleMode.ScaleToFit);
 
-      BiomeData biom = mapPreview.queryBiomAt(worldPos.x, worldPos.y, previewSizePixels);
+      BiomeData biom = mapPreview.queryBiom(worldPos.x, worldPos.y, previewSizePixels);
 
       GUILayout.BeginVertical();
       worldPos = EditorGUILayout.Vector2IntField("Tile Position", worldPos);
