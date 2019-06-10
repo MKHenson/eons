@@ -31,13 +31,11 @@
 		float maxHeight;
 		float baseBlends[maxLayerCount];
 		float baseStartHeights[maxLayerCount];
-		float baseColorStrength[maxLayerCount];
 		float baseTextureScales[maxLayerCount];
 		float _BumpStength;
 		float stichTiling;
 		float stichFalloffA;
 		float stichFalloffB;
-		float3 baseColors[maxLayerCount];
         fixed3 _SpecularColor;
         uint layerCount;
         half _Glossiness;
@@ -96,15 +94,22 @@
 
 			float3 normalMap = float3(0.0, 0.0, 0.0);
 
-			for (uint i = 0; i < layerCount; i++ ) {
-				float drawStrength = inverseLerp( -baseBlends[i]/2 - epsilon, baseBlends[i]/2,  heightPercent - baseStartHeights[i] );
-				float3 baseColor = baseColors[i] * baseColorStrength[i];
-				float3 textureColor = triplanar(IN.worldPos, baseTextureScales[i], blendAxes, i) * (1 - baseColorStrength[i]);
-				float3 normalColor = triplanar(IN.worldPos, baseTextureScales[i], blendAxes, i + layerCount );
+			// for (uint i = 0; i < 5; i++ ) {
+			// 	float drawStrength = inverseLerp( -baseBlends[i]/2 - epsilon, baseBlends[i]/2,  heightPercent - baseStartHeights[i] );
+			// 	int textureIndex = i * 4;
+			// 	float3 textureColor = triplanar(IN.worldPos, baseTextureScales[textureIndex], blendAxes, i);
+			// 	float3 normalColor = triplanar(IN.worldPos, baseTextureScales[textureIndex], blendAxes, textureIndex );
 
-				normalMap = normalMap * (1 - drawStrength) + normalColor * drawStrength;
-				o.Albedo = o.Albedo * (1 - drawStrength) + (baseColor + textureColor) * drawStrength;
-			}
+			// 	normalMap = normalMap * (1 - drawStrength) + normalColor * drawStrength;
+			// 	o.Albedo = o.Albedo * (1 - drawStrength) + textureColor * drawStrength;
+			// }
+
+			float drawStrength = inverseLerp( -baseBlends[0]/2 - epsilon, baseBlends[0]/2,  heightPercent - baseStartHeights[0] );
+			float3 textureColor = triplanar(IN.worldPos, baseTextureScales[0], blendAxes, 0);
+			float3 normalColor = triplanar(IN.worldPos, baseTextureScales[1], blendAxes, 1 );
+
+			normalMap = normalMap * (1 - drawStrength) + normalColor * drawStrength;
+			o.Albedo = textureColor;
 
             o.Smoothness = _Glossiness;
 			o.Metallic = _Metallic;
@@ -123,8 +128,8 @@
 			float borderPathMask = clamp( fallOffVal + noise, 0.0f, 1.0f );
 
             // Stich the borders by the border patch mask
-			o.Albedo = lerp( o.Albedo.rgb, tex2D (_MainTex, IN.uv_MainTex * stichTiling ).rgb, borderPathMask );
-			normalMap = lerp( normalMap, tex2D (_BumpMap, IN.uv_MainTex * stichTiling ).rgb, borderPathMask );
+			// o.Albedo = lerp( o.Albedo.rgb, tex2D (_MainTex, IN.uv_MainTex * stichTiling ).rgb, borderPathMask );
+			// normalMap = lerp( normalMap, tex2D (_BumpMap, IN.uv_MainTex * stichTiling ).rgb, borderPathMask );
 
 			float4 normal = lerp(float4(0.5, 0.5, 1, 1), float4(normalMap, 1), _BumpStength);
 			o.Normal = UnpackNormal(normal);

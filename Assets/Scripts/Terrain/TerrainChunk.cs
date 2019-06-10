@@ -50,8 +50,6 @@ public class TerrainChunk {
     meshFilter = meshObject.AddComponent<MeshFilter>();
     meshCollider = meshObject.AddComponent<MeshCollider>();
 
-    // meshRenderer.material = material;
-
     meshObject.transform.position = new Vector3(position.x, 0, position.y);
     meshObject.transform.parent = parent;
 
@@ -103,6 +101,8 @@ public class TerrainChunk {
   void onHeightMapReceived(object heightMapObject) {
     this.heightmap = (HeightMap)heightMapObject;
     heightMapReceived = true;
+
+    worldGenerator.generateMaterialUniforms(meshRenderer.material, biomeData);
 
     updateTerrainChunk();
   }

@@ -26,7 +26,7 @@ public class TextureData : UpdatableData {
     Array.Copy(normals, 0, diffAndNormals, normals.Length, normals.Length);
 
 
-    material.SetTexture("baseTextures", generateTextureArray(diffAndNormals));
+    material.SetTexture("baseTextures", TextureGenerator.generateTextureArray(diffAndNormals, textureSize, textureFormat));
     updateMeshHeights(material, savedMinHeight, savedMaxHeight);
   }
 
@@ -36,17 +36,6 @@ public class TextureData : UpdatableData {
 
     material.SetFloat("minHeight", minHeight);
     material.SetFloat("maxHeight", maxHeight);
-  }
-
-  Texture2DArray generateTextureArray(Texture2D[] textures) {
-    Texture2DArray textureArray = new Texture2DArray(textureSize, textureSize, textures.Length, textureFormat, true);
-
-    for (int i = 0; i < textures.Length; i++) {
-      textureArray.SetPixels(textures[i].GetPixels(), i);
-    }
-
-    textureArray.Apply();
-    return textureArray;
   }
 
   [System.Serializable]

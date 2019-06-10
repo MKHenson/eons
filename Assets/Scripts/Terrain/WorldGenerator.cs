@@ -3,21 +3,21 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class WorldGenerator : MonoBehaviour {
+  const int textureSize = 512;
+  const TextureFormat textureFormat = TextureFormat.RGB565;
+
   public NoiseSettings geography;
   public NoiseSettings temperature;
   public NoiseSettings rainfall;
 
-  public BiomeSettings[] biomes;
+  public BiomeMaterialSettings[] biomes;
+  private List<MaterialLookup> materialsLookup = new List<MaterialLookup>();
 
   [Range(0, 1)]
   public float seaLevel;
 
   [Range(0, 4)]
   public float heightCoolingFactor;
-
-  void OnValidate() {
-
-  }
 
   public void load(HeightMapSettings settings) {
     for (int i = 0; i < biomes.Length; i++) {
@@ -27,11 +27,71 @@ public class WorldGenerator : MonoBehaviour {
   }
 
   public Material getMaterialForBiome(BiomeData biome) {
-    for (int i = 0; i < biomes.Length; i++)
-      if (biomes[i].type == biome.biomeType)
-        return biomes[i].material;
+    foreach (MaterialLookup ml in materialsLookup) {
+      if (ml.biome == biome.biomeType && ml.north == biome.north.biomeType &&
+      ml.east == biome.east.biomeType &&
+      ml.south == biome.south.biomeType &&
+      ml.west == biome.west.biomeType) {
+        return ml.material;
+      }
+    }
 
-    return biomes[0].material;
+    MaterialLookup newLookup = new MaterialLookup();
+    newLookup.north = biome.north.biomeType;
+    newLookup.east = biome.east.biomeType;
+    newLookup.south = biome.south.biomeType;
+    newLookup.west = biome.west.biomeType;
+    newLookup.biome = biome.biomeType;
+
+    for (int i = 0; i < biomes.Length; i++) {
+      if (biomes[i].type == biome.biomeType)
+        newLookup.material = new Material(biomes[i].shader);
+    }
+
+    if (!newLookup.material)
+      newLookup.material = new Material(biomes[0].shader);
+
+    materialsLookup.Add(newLookup);
+    return newLookup.material;
+  }
+
+  private BiomeMaterialSettings getMaterialSettings(BiomeType type) {
+    for (int i = 0; i < biomes.Length; i++) {
+      if (biomes[i].type == type)
+        return biomes[i];
+    }
+
+    return biomes[0];
+  }
+
+  public void generateMaterialUniforms(Material material, BiomeData biome) {
+    List<BiomeMaterialSettings> settings = new List<BiomeMaterialSettings>();
+    List<Texture2D> textures = new List<Texture2D>();
+    List<float> heights = new List<float>();
+    List<float> blends = new List<float>();
+    List<float> uvScales = new List<float>();
+
+    settings.Add(getMaterialSettings(biome.biomeType));
+    settings.Add(getMaterialSettings(biome.north.biomeType));
+    settings.Add(getMaterialSettings(biome.east.biomeType));
+    settings.Add(getMaterialSettings(biome.south.biomeType));
+    settings.Add(getMaterialSettings(biome.west.biomeType));
+
+    foreach (BiomeMaterialSettings setting in settings) {
+      textures.Add(setting.main);
+      textures.Add(setting.mainNormal);
+      textures.Add(setting.secondary);
+      textures.Add(setting.secondaryNormal);
+      heights.Add(setting.blendHeight);
+      blends.Add(setting.blendAmount);
+      uvScales.Add(setting.mainUVScale);
+      uvScales.Add(setting.secondaryUVScale);
+    }
+
+    material.SetFloatArray("baseStartHeights", heights.ToArray());
+    material.SetFloatArray("baseBlends", blends.ToArray());
+    material.SetFloatArray("baseTextureScales", uvScales.ToArray());
+    material.SetTexture("baseTextures", TextureGenerator.generateTextureArray(textures.ToArray(), textureSize, textureFormat));
   }
 
   public Texture2D generateGeographyMap(Vector2Int worldPos, int size) {
@@ -125,12 +185,12 @@ public class WorldGenerator : MonoBehaviour {
     float[,] temps = Noise.generateNoiseMap(size, size, temperature, location);
     float[,] rainfalls = Noise.generateNoiseMap(size, size, rainfall, location);
 
-    BiomeData mainBiome = queryBiomAt(x, y, size, heights, temps, rainfalls);
+    BiomeData mainBiome = queryBiomAt(0, 0, size, heights, temps, rainfalls);
     mainBiome.location = location;
-    mainBiome.north = queryBiomAt(x, y - 1, size, heights, temps, rainfalls);
-    mainBiome.east = queryBiomAt(x + 1, y, size, heights, temps, rainfalls);
-    mainBiome.south = queryBiomAt(x, y + 1, size, heights, temps, rainfalls);
-    mainBiome.west = queryBiomAt(x + 1, y, size, heights, temps, rainfalls);
+    mainBiome.north = queryBiomAt(0, -1, size, heights, temps, rainfalls);
+    mainBiome.east = queryBiomAt(1, 0, size, heights, temps, rainfalls);
+    mainBiome.south = queryBiomAt(0, 1, size, heights, temps, rainfalls);
+    mainBiome.west = queryBiomAt(-1, 0, size, heights, temps, rainfalls);
 
     return mainBiome;
   }
@@ -138,9 +198,9 @@ public class WorldGenerator : MonoBehaviour {
   private BiomeData queryBiomAt(int x, int y, int size, float[,] heights, float[,] temps, float[,] rainfalls) {
     BiomeData toReturn = new BiomeData();
     int centerIndex = size / 2;
-    toReturn.height = heights[centerIndex, centerIndex];
-    toReturn.temperature = getTemp(temps[centerIndex, centerIndex], toReturn.height);
-    toReturn.rainfall = rainfalls[centerIndex, centerIndex];
+    toReturn.height = heights[centerIndex + x, centerIndex + y];
+    toReturn.temperature = getTemp(temps[centerIndex + x, centerIndex + y], toReturn.height);
+    toReturn.rainfall = rainfalls[centerIndex + x, centerIndex + y];
     toReturn.biomeType = getBiomeType(toReturn.temperature, toReturn.rainfall, toReturn.height);
     toReturn.geographyType = getGeographyType(toReturn.height);
     return toReturn;
@@ -166,10 +226,20 @@ public enum BiomeType {
 }
 
 [System.Serializable]
-public class BiomeSettings {
+public class BiomeMaterialSettings {
   public Material material;
   public TextureData textureSettings;
   public BiomeType type;
+
+  public Shader shader;
+  public Texture2D main;
+  public Texture2D mainNormal;
+  public Texture2D secondary;
+  public Texture2D secondaryNormal;
+  public float blendHeight;
+  public float blendAmount;
+  public float mainUVScale;
+  public float secondaryUVScale;
 }
 
 public class BiomeData {
@@ -183,4 +253,13 @@ public class BiomeData {
   public BiomeData east;
   public BiomeData south;
   public BiomeData west;
+}
+
+class MaterialLookup {
+  public Material material;
+  public BiomeType biome;
+  public BiomeType north;
+  public BiomeType east;
+  public BiomeType south;
+  public BiomeType west;
 }
