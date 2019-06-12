@@ -102,7 +102,7 @@ public class TerrainChunk {
     this.heightmap = (HeightMap)heightMapObject;
     heightMapReceived = true;
 
-    worldGenerator.generateMaterialUniforms(meshRenderer.material, biomeData);
+    worldGenerator.generateMaterialUniforms(meshRenderer.material, biomeData, heightMapSettings);
 
     updateTerrainChunk();
   }

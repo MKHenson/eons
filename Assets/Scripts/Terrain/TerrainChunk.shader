@@ -3,9 +3,9 @@
 	Properties
 	{
 		_MainTex("Texture", 2D) = "white"{}
-		_Glossiness ("Smoothness", Range(0,1)) = 0.5
-		_Metallic ("Metallic", Range(0,1)) = 0.5
-		_Occlusion ("Occlusion", Float) = 0.5
+		_Glossiness ("Smoothness", Range(0,1)) = 0.0
+		_Metallic ("Metallic", Range(0,1)) = 0.0
+		_Occlusion ("Occlusion", Float) = 0.0
 		_BumpStength ("Bump Strength", Float) = 1
 		stichTiling ("Stich Tiling", Float) = 16
 		stichFalloffA ("Stich Falloff A", Float) = 2.8
@@ -82,6 +82,18 @@
 			return pow(value, a) / (pow(value, a) + pow((b - b * value), a));
 		}
 
+		// float3 blend(float3 texture1, float a1, float3 texture2, float a2) {
+		// 	float depth = 0.2;
+		// 	float l1 = length(texture1);
+		// 	float l2 = length(texture2);
+		// 	float ma = max(l1 + a1, l2 + a2) - depth;
+
+		// 	float b1 = max(l1 + a1 - ma, 0);
+		// 	float b2 = max(l2 + a2 - ma, 0);
+
+		// 	return (texture1.rgb * b1 + texture2.rgb * b2) / (b1 + b2);
+		// }
+
 		// Include noise
 		#include "noisePerlin.cginc"
 
@@ -104,12 +116,22 @@
 			// 	o.Albedo = o.Albedo * (1 - drawStrength) + textureColor * drawStrength;
 			// }
 
-			float drawStrength = inverseLerp( -baseBlends[0]/2 - epsilon, baseBlends[0]/2,  heightPercent - baseStartHeights[0] );
+			// First Albedo
+			// float drawStrength = inverseLerp( -baseBlends[0]/2 - epsilon, baseBlends[0]/2,  heightPercent - 0 );
 			float3 textureColor = triplanar(IN.worldPos, baseTextureScales[0], blendAxes, 0);
-			float3 normalColor = triplanar(IN.worldPos, baseTextureScales[1], blendAxes, 1 );
+			float3 normalColor = triplanar(IN.worldPos, baseTextureScales[0], blendAxes, 1 );
+
+			normalMap = normalColor; // * (1 - drawStrength) + normalColor * drawStrength;
+			o.Albedo = textureColor; // * (1 - drawStrength) + textureColor * drawStrength;
+
+			// Second Albedo
+			float drawStrength = inverseLerp( -baseBlends[0]/2 - epsilon, baseBlends[0]/2,  heightPercent - baseStartHeights[0] );
+			textureColor = triplanar(IN.worldPos, baseTextureScales[1], blendAxes, 2);
+			normalColor = triplanar(IN.worldPos, baseTextureScales[1], blendAxes, 3 );
 
 			normalMap = normalMap * (1 - drawStrength) + normalColor * drawStrength;
-			o.Albedo = textureColor;
+			o.Albedo = o.Albedo * (1 - drawStrength) + textureColor * drawStrength;
+
 
             o.Smoothness = _Glossiness;
 			o.Metallic = _Metallic;
