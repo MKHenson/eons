@@ -79,8 +79,8 @@ Material:
     - _SrcBlend: 1
     - _UVSec: 0
     - _ZWrite: 1
-    - stichFalloffA: 2.8
-    - stichFalloffB: 4
+    - stichFalloffA: 0.95
+    - stichFalloffB: 10.86
     - stichTiling: 32.58
     - testScale: 1
     m_Colors:

@@ -16,12 +16,12 @@ MonoBehaviour:
   noiseSettings:
     scale: 100
     octaves: 6
-    persistance: 0.426
+    persistance: 0.48
     lacunarity: 1.8
     seed: 0
     offset: {x: 0, y: 0}
   useFalloff: 0
-  heightMultiplier: 50
+  heightMultiplier: 60
   heightCurve:
     serializedVersion: 2
     m_Curve:

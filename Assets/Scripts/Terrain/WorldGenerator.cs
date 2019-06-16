@@ -1,6 +1,7 @@
-﻿using System.Collections;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
+
 
 public class WorldGenerator : MonoBehaviour {
   const int textureSize = 512;
@@ -9,9 +10,9 @@ public class WorldGenerator : MonoBehaviour {
   public NoiseSettings geography;
   public NoiseSettings temperature;
   public NoiseSettings rainfall;
-
   public BiomeMaterialSettings[] biomes;
   private List<MaterialLookup> materialsLookup = new List<MaterialLookup>();
+  private Texture2DArray textures;
 
   [Range(0, 1)]
   public float seaLevel;
@@ -19,11 +20,20 @@ public class WorldGenerator : MonoBehaviour {
   [Range(0, 4)]
   public float heightCoolingFactor;
 
-  public void load(HeightMapSettings settings) {
-    for (int i = 0; i < biomes.Length; i++) {
-      biomes[i].textureSettings.applyToMaterial(biomes[i].material);
-      biomes[i].textureSettings.updateMeshHeights(biomes[i].material, settings.minHeight, settings.maxHeight);
+  void Start() {
+    List<Texture2D> texturesList = new List<Texture2D>();
+
+    foreach (BiomeMaterialSettings materialSetting in biomes) {
+      texturesList.Add(materialSetting.main);
+      texturesList.Add(materialSetting.mainNormal);
+      texturesList.Add(materialSetting.secondary);
+      texturesList.Add(materialSetting.secondaryNormal);
     }
+
+    textures = TextureGenerator.generateTextureArray(texturesList.ToArray(), textureSize, textureFormat);
+  }
+
+  public void load(HeightMapSettings settings) {
   }
 
   public Material getMaterialForBiome(BiomeData biome) {
@@ -65,36 +75,38 @@ public class WorldGenerator : MonoBehaviour {
   }
 
   public void generateMaterialUniforms(Material material, BiomeData biome, HeightMapSettings heightMapSettings) {
-    List<BiomeMaterialSettings> settings = new List<BiomeMaterialSettings>();
-    List<Texture2D> textures = new List<Texture2D>();
-    List<float> heights = new List<float>();
-    List<float> blends = new List<float>();
-    List<float> uvScales = new List<float>();
+    BiomeMaterialSettings[] settings = new BiomeMaterialSettings[5];
+    float[] heights = new float[5];
+    float[] blends = new float[5];
+    float[] primaryUvScales = new float[5];
+    float[] secondaryUvScales = new float[5];
+    float[] textureIndices = new float[5];
 
-    settings.Add(getMaterialSettings(biome.biomeType));
-    settings.Add(getMaterialSettings(biome.north.biomeType));
-    settings.Add(getMaterialSettings(biome.east.biomeType));
-    settings.Add(getMaterialSettings(biome.south.biomeType));
-    settings.Add(getMaterialSettings(biome.west.biomeType));
+    settings[0] = getMaterialSettings(biome.biomeType);
+    settings[1] = getMaterialSettings(biome.north.biomeType);
+    settings[2] = getMaterialSettings(biome.east.biomeType);
+    settings[3] = getMaterialSettings(biome.south.biomeType);
+    settings[4] = getMaterialSettings(biome.west.biomeType);
 
-    foreach (BiomeMaterialSettings setting in settings) {
-      textures.Add(setting.main);
-      textures.Add(setting.mainNormal);
-      textures.Add(setting.secondary);
-      textures.Add(setting.secondaryNormal);
-      heights.Add(setting.blendHeight);
-      blends.Add(setting.blendAmount);
-      uvScales.Add(setting.mainUVScale);
-      uvScales.Add(setting.secondaryUVScale);
+    for (int i = 0; i < 5; i++) {
+      heights[i] = settings[i].blendHeight;
+      blends[i] = settings[i].blendAmount;
+      primaryUvScales[i] = settings[i].mainUVScale;
+      secondaryUvScales[i] = settings[i].secondaryUVScale;
+
+      // Times 4 as there are 4 texture lookups per biome
+      textureIndices[i] = Array.IndexOf(biomes, settings[i]) * 4;
     }
 
     material.SetFloat("minHeight", heightMapSettings.minHeight);
     material.SetFloat("maxHeight", heightMapSettings.maxHeight);
 
-    material.SetFloatArray("baseStartHeights", heights.ToArray());
-    material.SetFloatArray("baseBlends", blends.ToArray());
-    material.SetFloatArray("baseTextureScales", uvScales.ToArray());
-    material.SetTexture("baseTextures", TextureGenerator.generateTextureArray(textures.ToArray(), textureSize, textureFormat));
+    material.SetFloatArray("baseStartHeights", heights);
+    material.SetFloatArray("baseBlends", blends);
+    material.SetFloatArray("primaryUvScales", primaryUvScales);
+    material.SetFloatArray("secondaryUvScales", secondaryUvScales);
+    material.SetFloatArray("textureIndices", textureIndices);
+    material.SetTexture("baseTextures", textures);
   }
 
   public Texture2D generateGeographyMap(Vector2Int worldPos, int size) {
@@ -230,10 +242,7 @@ public enum BiomeType {
 
 [System.Serializable]
 public class BiomeMaterialSettings {
-  public Material material;
-  public TextureData textureSettings;
   public BiomeType type;
-
   public Shader shader;
   public Texture2D main;
   public Texture2D mainNormal;
