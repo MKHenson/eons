@@ -7,11 +7,12 @@ public class WorldGenerator : MonoBehaviour {
   const int textureSize = 512;
   const TextureFormat textureFormat = TextureFormat.RGB565;
 
+  public MeshSettings meshSettings;
   public NoiseSettings geography;
   public NoiseSettings temperature;
   public NoiseSettings rainfall;
   public BiomeMaterialSettings[] biomes;
-  private List<MaterialLookup> materialsLookup = new List<MaterialLookup>();
+  private List<BiomeLookup> materialsLookup = new List<BiomeLookup>();
   private Texture2DArray textures;
 
   [Range(0, 1)]
@@ -36,8 +37,17 @@ public class WorldGenerator : MonoBehaviour {
   public void load(HeightMapSettings settings) {
   }
 
+  HeightMapSettings getHeightSettings(BiomeData biome) {
+    foreach (BiomeMaterialSettings setting in biomes)
+      if (setting.type == biome.biomeType) {
+        return setting.heightMapSettings;
+      }
+
+    return biomes[0].heightMapSettings;
+  }
+
   public Material getMaterialForBiome(BiomeData biome) {
-    foreach (MaterialLookup ml in materialsLookup) {
+    foreach (BiomeLookup ml in materialsLookup) {
       if (ml.biome == biome.biomeType && ml.north == biome.north.biomeType &&
       ml.east == biome.east.biomeType &&
       ml.south == biome.south.biomeType &&
@@ -46,7 +56,7 @@ public class WorldGenerator : MonoBehaviour {
       }
     }
 
-    MaterialLookup newLookup = new MaterialLookup();
+    BiomeLookup newLookup = new BiomeLookup();
     newLookup.north = biome.north.biomeType;
     newLookup.east = biome.east.biomeType;
     newLookup.south = biome.south.biomeType;
@@ -107,6 +117,18 @@ public class WorldGenerator : MonoBehaviour {
     material.SetFloatArray("secondaryUvScales", secondaryUvScales);
     material.SetFloatArray("textureIndices", textureIndices);
     material.SetTexture("baseTextures", textures);
+  }
+
+  public HeightMap generateBiomeHeightmap(BiomeData biome, Vector2 sampleCenter) {
+    HeightMapSettings[] heightmapSettings = new HeightMapSettings[5];
+    heightmapSettings[0] = getHeightSettings(biome);
+    heightmapSettings[1] = getHeightSettings(biome.north);
+    heightmapSettings[2] = getHeightSettings(biome.east);
+    heightmapSettings[3] = getHeightSettings(biome.south);
+    heightmapSettings[4] = getHeightSettings(biome.west);
+
+    HeightMap heightmap = HeightMapGenerator.generateBlendedHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightmapSettings, sampleCenter);
+    return heightmap;
   }
 
   public Texture2D generateGeographyMap(Vector2Int worldPos, int size) {
@@ -218,6 +240,7 @@ public class WorldGenerator : MonoBehaviour {
     toReturn.rainfall = rainfalls[centerIndex + x, centerIndex + y];
     toReturn.biomeType = getBiomeType(toReturn.temperature, toReturn.rainfall, toReturn.height);
     toReturn.geographyType = getGeographyType(toReturn.height);
+
     return toReturn;
   }
 }
@@ -248,6 +271,7 @@ public class BiomeMaterialSettings {
   public Texture2D mainNormal;
   public Texture2D secondary;
   public Texture2D secondaryNormal;
+  public HeightMapSettings heightMapSettings;
   public float blendHeight;
   public float blendAmount;
   public float mainUVScale;
@@ -267,7 +291,7 @@ public class BiomeData {
   public BiomeData west;
 }
 
-class MaterialLookup {
+class BiomeLookup {
   public Material material;
   public BiomeType biome;
   public BiomeType north;

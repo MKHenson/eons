@@ -104,7 +104,7 @@
 				cnoise(IN.uv_MainTex * 30.0f) +
 				cnoise(IN.uv_MainTex * 80.0f) / 3.0f), 0.0f );
 
-			float borderPathMask = clamp( fallOffVal + noise, 0.0f, 1.0f );
+			float borderPathMask = 1; // clamp( fallOffVal + noise, 0.0f, 1.0f );
 
 			float borderFalloff = 0.2f;
 			float northFade = (1.0 - inverseLerp( 0 - epsilon, borderFalloff, IN.uv_MainTex.y )) * 0.5f;

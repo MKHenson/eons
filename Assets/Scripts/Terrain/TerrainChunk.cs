@@ -25,7 +25,7 @@ public class TerrainChunk {
 
   WorldGenerator worldGenerator;
   HeightMapSettings heightMapSettings;
-  MeshSettings meshSettings;
+  // MeshSettings meshSettings;
   Transform viewer;
   BiomeData biomeData;
 
@@ -35,7 +35,7 @@ public class TerrainChunk {
     this.colliderLODIndex = colliderLODIndex;
     this.coord = coord;
     this.heightMapSettings = heightMapSettings;
-    this.meshSettings = meshSettings;
+    // this.meshSettings = meshSettings;
     this.viewer = viewer;
 
     sampleCenter = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
@@ -89,7 +89,10 @@ public class TerrainChunk {
   void onBiomDataReceived(object biomeDataObject) {
     biomeData = biomeDataObject as BiomeData;
     meshRenderer.material = worldGenerator.getMaterialForBiome(biomeData);
-    ThreadedDataRequester.requestData(() => HeightMapGenerator.generateHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightMapSettings, sampleCenter), onHeightMapReceived);
+
+    // onHeightMapReceived(worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter));
+
+    ThreadedDataRequester.requestData(() => worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter), onHeightMapReceived);
   }
 
   void onHeightMapReceived(object heightMapObject) {
@@ -131,7 +134,7 @@ public class TerrainChunk {
             previousLODIndex = lodIndex;
             meshFilter.mesh = lodMesh.mesh;
           } else if (!lodMesh.hasRequestedMesh) {
-            lodMesh.requestMesh(heightmap, meshSettings, heightMapSettings);
+            lodMesh.requestMesh(heightmap, worldGenerator.meshSettings, heightMapSettings);
           }
         }
       }
@@ -152,7 +155,7 @@ public class TerrainChunk {
 
       if (sqrDstFromViewerToEdge < detailLevels[colliderLODIndex].sqrVisibleDstThreshold) {
         if (!lodMeshes[colliderLODIndex].hasRequestedMesh)
-          lodMeshes[colliderLODIndex].requestMesh(heightmap, meshSettings, heightMapSettings);
+          lodMeshes[colliderLODIndex].requestMesh(heightmap, worldGenerator.meshSettings, heightMapSettings);
       }
 
       if (sqrDstFromViewerToEdge < colliderGenerationDistanceThreshold * colliderGenerationDistanceThreshold) {
