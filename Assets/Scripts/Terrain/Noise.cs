@@ -64,7 +64,14 @@ public static class Noise {
         // if (settings.normalizeMode == NormalizeMode.Global) {
         float normalizedHeight = (noiseMap[x, y] + 1) / maxPossibleHeight;
         noiseMap[x, y] = Mathf.Clamp(normalizedHeight, 0, int.MaxValue);
-        // }
+
+        // noiseMap[x, y] = 0;
+        // // if (y > mapHeight - 4)
+        // //   noiseMap[x, y] = 1;
+
+        // if (x < 4 && y > mapWidth - 4)
+        //   noiseMap[x, y] = 1;
+
       }
     }
     // if (settings.normalizeMode == NormalizeMode.Local) {
@@ -77,7 +84,64 @@ public static class Noise {
 
     return noiseMap;
   }
+
+  public static float getNoiseAtPoint(int x, int y, int mapWidth, int mapHeight, NoiseSettings settings, Vector2 sampleCenter) {
+
+    System.Random prng = new System.Random(settings.seed);
+    Vector2[] octaveOffsets = new Vector2[settings.octaves];
+
+    float maxPossibleHeight = 0;
+    float amplitude = 1;
+    float frequency = 1;
+
+    for (int i = 0; i < settings.octaves; i++) {
+      float offsetX = prng.Next(-100000, 100000) + settings.offset.x + sampleCenter.x;
+      float offsetY = prng.Next(-100000, 100000) - settings.offset.y - sampleCenter.y;
+      octaveOffsets[i] = new Vector2(offsetX, offsetY);
+
+      maxPossibleHeight += amplitude;
+      amplitude *= settings.persistance;
+    }
+
+    float maxLocalNoiseHeight = float.MinValue;
+    float minLocalNoiseHeight = float.MaxValue;
+
+    float halfWidth = mapWidth / 2f;
+    float halfHeight = mapHeight / 2f;
+
+    amplitude = 1;
+    frequency = 1;
+    float noiseHeight = 0;
+
+    for (int i = 0; i < settings.octaves; i++) {
+      float sampleX = (x - halfWidth + octaveOffsets[i].x) / settings.scale * frequency;
+      float sampleY = (y - halfHeight + octaveOffsets[i].y) / settings.scale * frequency;
+
+      float perlinValue = Mathf.PerlinNoise(sampleX, sampleY) * 2 - 1;
+      noiseHeight += perlinValue * amplitude;
+
+      amplitude *= settings.persistance;
+      frequency *= settings.lacunarity;
+    }
+
+    if (noiseHeight > maxLocalNoiseHeight) {
+      maxLocalNoiseHeight = noiseHeight;
+    }
+    if (noiseHeight < minLocalNoiseHeight) {
+      minLocalNoiseHeight = noiseHeight;
+    }
+
+    float val = noiseHeight;
+
+    // if (settings.normalizeMode == NormalizeMode.Global) {
+    float normalizedHeight = (val + 1) / maxPossibleHeight;
+    val = Mathf.Clamp(normalizedHeight, 0, int.MaxValue);
+
+    return val;
+  }
 }
+
+
 
 [System.Serializable]
 public class NoiseSettings {

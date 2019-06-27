@@ -1,4 +1,6 @@
 {
+  "vscode_custom_css.imports": ["file:///Users/Mathe/synthwave84.css"],
+  "vscode_custom_css.policy": true,
   "files.exclude": {
     "**/.DS_Store": true,
     "**/.git": true,

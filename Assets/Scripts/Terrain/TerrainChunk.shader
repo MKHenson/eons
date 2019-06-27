@@ -7,8 +7,8 @@
 		_Metallic ("Metallic", Range(0,1)) = 0.0
 		_Occlusion ("Occlusion", Float) = 0.0
 		_BumpStength ("Bump Strength", Float) = 1
-		stichFalloffA ("Stich Falloff A", Float) = 1
-		stichFalloffB ("Stich Falloff B", Float) = 10
+		stichFalloffA ("Stich Falloff A", Float) = 2
+		stichFalloffB ("Stich Falloff B", Float) = 3
 	}
 	SubShader
 	{
@@ -104,14 +104,13 @@
 				cnoise(IN.uv_MainTex * 30.0f) +
 				cnoise(IN.uv_MainTex * 80.0f) / 3.0f), 0.0f );
 
-			float borderPathMask = 1; // clamp( fallOffVal + noise, 0.0f, 1.0f );
+			float borderPathMask = clamp( fallOffVal + noise * 2, 0.0f, 1.0f );
 
 			float borderFalloff = 0.2f;
 			float northFade = (1.0 - inverseLerp( 0 - epsilon, borderFalloff, IN.uv_MainTex.y )) * 0.5f;
 			float eastFade = (inverseLerp( 1.0 - borderFalloff, 1.0, IN.uv_MainTex.x )) * 0.5f;
 			float southFade = inverseLerp( 1.0 - borderFalloff, 1.0, IN.uv_MainTex.y ) * 0.5f;
 			float westFade = (1.0 - inverseLerp( 0 - epsilon, borderFalloff, IN.uv_MainTex.x )) * 0.5f;
-
 
 			// Set lighting properties
 			o.Smoothness = _Glossiness;
@@ -152,8 +151,9 @@
 			float3 northDiffuseCombined = northDiffuseMap1 * (1 - drawStrength) + northDiffuseMap2 * drawStrength;
 
 			// Blends
-			normalMap = lerp( normalMap, northNormalCombined, northFade * borderPathMask );
-			o.Albedo = lerp( o.Albedo, northDiffuseCombined, northFade * borderPathMask );
+			float blend1 = northFade - (northFade * eastFade + northFade * westFade) * 0.75;
+			normalMap = lerp( normalMap, northNormalCombined, blend1 * borderPathMask );
+			o.Albedo = lerp( o.Albedo, northDiffuseCombined, blend1 * borderPathMask );
 
 
 
@@ -173,8 +173,9 @@
 			float3 eastDiffuseCombined = eastDiffuseMap1 * (1 - drawStrength) + eastDiffuseMap2 * drawStrength;
 
 			// Blends
-			normalMap = lerp( normalMap, eastNormalCombined, eastFade * borderPathMask );
-			o.Albedo = lerp( o.Albedo, eastDiffuseCombined, eastFade * borderPathMask );
+			float blend2 = eastFade - (eastFade * northFade + eastFade * southFade) * 0.75;
+			normalMap = lerp( normalMap, eastNormalCombined, blend2 * borderPathMask );
+			o.Albedo = lerp( o.Albedo, eastDiffuseCombined, blend2 * borderPathMask );
 
 
 
@@ -195,8 +196,9 @@
 			float3 southDiffuseCombined = southDiffuseMap1 * (1 - drawStrength) + southDiffuseMap2 * drawStrength;
 
 			// Blends
-			normalMap = lerp( normalMap, southNormalCombined, southFade  * borderPathMask );
-			o.Albedo = lerp( o.Albedo, southDiffuseCombined, southFade   * borderPathMask );
+			float blend3 = southFade - (southFade * eastFade + southFade * westFade) * 0.75;
+			normalMap = lerp( normalMap, southNormalCombined, blend3  * borderPathMask );
+			o.Albedo = lerp( o.Albedo, southDiffuseCombined, blend3   * borderPathMask );
 
 
 
@@ -217,13 +219,15 @@
 			float3 westDiffuseCombined = westDiffuseMap1 * (1 - drawStrength) + westDiffuseMap2 * drawStrength;
 
 			// Blends
-			normalMap = lerp( normalMap, westNormalCombined, westFade * borderPathMask);
-			o.Albedo = lerp( o.Albedo, westDiffuseCombined, westFade * borderPathMask);
+			float blend4 = westFade - (westFade * northFade + westFade * southFade) * 0.75;
+			normalMap = lerp( normalMap, westNormalCombined, blend4 * borderPathMask);
+			o.Albedo = lerp( o.Albedo, westDiffuseCombined, blend4 * borderPathMask);
 
 			float4 normal = lerp(float4(0.5, 0.5, 1, 1), float4(normalMap, 1), _BumpStength);
 			o.Normal = UnpackNormal(normal);
 
-			// o.Albedo = float3(borderPathMask, borderPathMask, borderPathMask);
+
+			// o.Albedo = float3(noise, noise, noise);
 		}
 		ENDCG
 	}

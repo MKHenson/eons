@@ -119,15 +119,21 @@ public class WorldGenerator : MonoBehaviour {
     material.SetTexture("baseTextures", textures);
   }
 
-  public HeightMap generateBiomeHeightmap(BiomeData biome, Vector2 sampleCenter) {
-    HeightMapSettings[] heightmapSettings = new HeightMapSettings[5];
+  public HeightMap generateBiomeHeightmap(BiomeData biome, Vector2 coord) {
+    HeightMapSettings[] heightmapSettings = new HeightMapSettings[9];
     heightmapSettings[0] = getHeightSettings(biome);
     heightmapSettings[1] = getHeightSettings(biome.north);
-    heightmapSettings[2] = getHeightSettings(biome.east);
-    heightmapSettings[3] = getHeightSettings(biome.south);
-    heightmapSettings[4] = getHeightSettings(biome.west);
+    heightmapSettings[2] = getHeightSettings(biome.northEast);
+    heightmapSettings[3] = getHeightSettings(biome.east);
+    heightmapSettings[4] = getHeightSettings(biome.southEast);
+    heightmapSettings[5] = getHeightSettings(biome.south);
+    heightmapSettings[6] = getHeightSettings(biome.southWest);
+    heightmapSettings[7] = getHeightSettings(biome.west);
+    heightmapSettings[8] = getHeightSettings(biome.northWest);
 
-    HeightMap heightmap = HeightMapGenerator.generateBlendedHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightmapSettings, sampleCenter);
+    float scale = meshSettings.meshWorldSize / meshSettings.meshScale;
+
+    HeightMap heightmap = HeightMapGenerator.generateBlendedHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightmapSettings, coord, scale);
     return heightmap;
   }
 
@@ -225,9 +231,13 @@ public class WorldGenerator : MonoBehaviour {
     BiomeData mainBiome = queryBiomAt(0, 0, size, heights, temps, rainfalls);
     mainBiome.location = location;
     mainBiome.north = queryBiomAt(0, -1, size, heights, temps, rainfalls);
+    mainBiome.northEast = queryBiomAt(1, -1, size, heights, temps, rainfalls);
     mainBiome.east = queryBiomAt(1, 0, size, heights, temps, rainfalls);
+    mainBiome.southEast = queryBiomAt(1, 1, size, heights, temps, rainfalls);
     mainBiome.south = queryBiomAt(0, 1, size, heights, temps, rainfalls);
+    mainBiome.southWest = queryBiomAt(-1, 1, size, heights, temps, rainfalls);
     mainBiome.west = queryBiomAt(-1, 0, size, heights, temps, rainfalls);
+    mainBiome.northWest = queryBiomAt(-1, 1, size, heights, temps, rainfalls);
 
     return mainBiome;
   }
@@ -286,9 +296,13 @@ public class BiomeData {
   public float temperature;
   public float rainfall;
   public BiomeData north;
+  public BiomeData northEast;
   public BiomeData east;
+  public BiomeData southEast;
   public BiomeData south;
+  public BiomeData southWest;
   public BiomeData west;
+  public BiomeData northWest;
 }
 
 class BiomeLookup {

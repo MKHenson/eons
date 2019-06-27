@@ -38,9 +38,9 @@ public class TerrainChunk {
     // this.meshSettings = meshSettings;
     this.viewer = viewer;
 
-    sampleCenter = coord * meshSettings.meshWorldSize / meshSettings.meshScale;
-    Vector2 position = coord * meshSettings.meshWorldSize;
-    bounds = new Bounds(position, Vector2.one * meshSettings.meshWorldSize);
+    sampleCenter = coord * worldGenerator.meshSettings.meshWorldSize / worldGenerator.meshSettings.meshScale;
+    Vector2 position = coord * worldGenerator.meshSettings.meshWorldSize;
+    bounds = new Bounds(position, Vector2.one * worldGenerator.meshSettings.meshWorldSize);
 
     meshObject = new GameObject("Terrain Chunk");
     meshRenderer = meshObject.AddComponent<MeshRenderer>();
@@ -90,9 +90,9 @@ public class TerrainChunk {
     biomeData = biomeDataObject as BiomeData;
     meshRenderer.material = worldGenerator.getMaterialForBiome(biomeData);
 
-    // onHeightMapReceived(worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter));
+    onHeightMapReceived(worldGenerator.generateBiomeHeightmap(biomeData, coord));
 
-    ThreadedDataRequester.requestData(() => worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter), onHeightMapReceived);
+    // ThreadedDataRequester.requestData(() => worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter), onHeightMapReceived);
   }
 
   void onHeightMapReceived(object heightMapObject) {
