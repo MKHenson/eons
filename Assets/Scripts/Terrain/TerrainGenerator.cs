@@ -15,7 +15,7 @@ public class TerrainGenerator : MonoBehaviour {
 
   public MeshSettings meshSettings;
   public HeightMapSettings heightMapSettings;
-  public TextureData textureSettings;
+  // public TextureData textureSettings;
 
   public Transform viewer;
   public Material mapMaterial;
@@ -34,8 +34,8 @@ public class TerrainGenerator : MonoBehaviour {
   bool initialMeshesLoaded = false;
 
   private void Start() {
-    textureSettings.applyToMaterial(mapMaterial);
-    textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
+    // textureSettings.applyToMaterial(mapMaterial);
+    // textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
 
     worldGenerator.load(heightMapSettings);
 
