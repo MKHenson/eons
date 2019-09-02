@@ -12,37 +12,23 @@ public class TerrainGenerator : MonoBehaviour {
 
   public int colliderLODIndex;
   public LODInfo[] detailLevels;
-
   public MeshSettings meshSettings;
   public HeightMapSettings heightMapSettings;
-  // public TextureData textureSettings;
-
   public Transform viewer;
-  public Material mapMaterial;
-
   public WorldGenerator worldGenerator;
 
-  Vector2 viewerPosition;
-  Vector2 viewerPositionOld;
-
-  float meshWorldSize;
-  int chunksVisibleInViewDst;
-
-  Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
-  List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
-
-  bool initialMeshesLoaded = false;
+  private float meshWorldSize;
+  private int chunksVisibleInViewDst;
+  private bool initialMeshesLoaded = false;
+  private Vector2 viewerPosition;
+  private Vector2 viewerPositionOld;
+  private Dictionary<Vector2, TerrainChunk> terrainChunkDictionary = new Dictionary<Vector2, TerrainChunk>();
+  private List<TerrainChunk> visibleTerrainChunks = new List<TerrainChunk>();
 
   private void Start() {
-    // textureSettings.applyToMaterial(mapMaterial);
-    // textureSettings.updateMeshHeights(mapMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
-
-    worldGenerator.load(heightMapSettings);
-
     float maxViewDst = detailLevels[detailLevels.Length - 1].visibleDstThreshold;
     meshWorldSize = meshSettings.meshWorldSize;
     chunksVisibleInViewDst = Mathf.RoundToInt(maxViewDst / meshWorldSize);
-
     updateVisibleChunks();
   }
 
@@ -94,7 +80,7 @@ public class TerrainGenerator : MonoBehaviour {
           if (terrainChunkDictionary.ContainsKey(viewedChunkCoord)) {
             terrainChunkDictionary[viewedChunkCoord].updateTerrainChunk();
           } else {
-            TerrainChunk newChunk = new TerrainChunk(viewedChunkCoord, worldGenerator, heightMapSettings, meshSettings, detailLevels, colliderLODIndex, transform, viewer, mapMaterial);
+            TerrainChunk newChunk = new TerrainChunk(viewedChunkCoord, worldGenerator, heightMapSettings, meshSettings, detailLevels, colliderLODIndex, transform, viewer);
             terrainChunkDictionary.Add(viewedChunkCoord, newChunk);
 
             newChunk.onVisibilityChanged += onTerrainChunkVisibilityChanged;

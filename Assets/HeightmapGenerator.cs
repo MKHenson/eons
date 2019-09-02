@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System;
-using UnityEngine;
+﻿using UnityEngine;
 using System.Linq;
 
 public class HeightmapGenerator : MonoBehaviour {
@@ -11,6 +8,7 @@ public class HeightmapGenerator : MonoBehaviour {
   public HeightMapSettings heightMapSettings;
   public HeightMapSettings heightMapSettings2;
   public HeightMap[] generated;
+  private float[,] falloffValues;
 
   // Start is called before the first frame update
   void Start() {
@@ -31,8 +29,10 @@ public class HeightmapGenerator : MonoBehaviour {
         HeightMapGenerator.generateHeightmap(textureSize, textureSize, heightMapSettings2, Vector2.zero),
         HeightMapGenerator.generateHeightmap(textureSize, textureSize, heightMapSettings2, Vector2.zero),
         HeightMapGenerator.generateHeightmap(textureSize, textureSize, heightMapSettings2, Vector2.zero)
-    };
+      };
+
       generated = temp;
+      falloffValues = FalloffGenerator.generateFalloffMap(textureSize, 2.0f, 10.0f);
     }
 
     HeightMap[,] heightMapsMacro = {
@@ -43,11 +43,10 @@ public class HeightmapGenerator : MonoBehaviour {
 
     float min = generated.Min(heitmap => heitmap.minValue);
     float max = generated.Max(heitmap => heitmap.maxValue);
-
     int combinedWidth = textureSize * 3;
     int combinedHeight = textureSize * 3;
-
     Color[] colorMap = new Color[combinedWidth * combinedHeight];
+    Color[] originalMap = new Color[combinedWidth * combinedHeight];
 
     for (int y = 0; y < combinedHeight; y++)
       for (int x = 0; x < combinedWidth; x++) {
@@ -65,9 +64,20 @@ public class HeightmapGenerator : MonoBehaviour {
           arrayY = 2;
 
         colorMap[y * combinedWidth + x] = Color.Lerp(Color.black, Color.white, Mathf.InverseLerp(min, max, heightMapsMacro[arrayX, arrayY].values[x % textureSize, y % textureSize]));
+        originalMap[y * combinedWidth + x] = colorMap[y * combinedWidth + x];
       }
 
-    Color[] blurredColorMapFlattened = GaussianBlur.FastGaussianBlur(colorMap, combinedWidth, combinedHeight, 30);
+    Color[] blurredColorMapFlattened = GaussianBlur.FastGaussianBlur(colorMap, combinedWidth, combinedHeight, 10);
+
+    for (int y = textureSize; y < combinedHeight - textureSize; y++)
+      for (int x = textureSize; x < combinedWidth - textureSize; x++) {
+        float fallOff = falloffValues[x % textureSize, y % textureSize];
+        Color blurredValue = blurredColorMapFlattened[y * combinedWidth + x];
+        Color originalValue = originalMap[y * combinedWidth + x];
+
+        blurredColorMapFlattened[y * combinedWidth + x] = Color.Lerp(originalValue, blurredValue, fallOff);
+      }
+
     drawTexture(TextureGenerator.textureFromColormap(blurredColorMapFlattened, combinedWidth, combinedHeight));
   }
 

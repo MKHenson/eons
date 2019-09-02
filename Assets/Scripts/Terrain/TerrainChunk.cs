@@ -24,18 +24,14 @@ public class TerrainChunk {
   float maxViewDst;
 
   WorldGenerator worldGenerator;
-  HeightMapSettings heightMapSettings;
-  // MeshSettings meshSettings;
   Transform viewer;
   BiomeData biomeData;
 
-  public TerrainChunk(Vector2 coord, WorldGenerator worldGenerator, HeightMapSettings heightMapSettings, MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, Transform parent, Transform viewer, Material material) {
+  public TerrainChunk(Vector2 coord, WorldGenerator worldGenerator, HeightMapSettings heightMapSettings, MeshSettings meshSettings, LODInfo[] detailLevels, int colliderLODIndex, Transform parent, Transform viewer) {
     this.detailLevels = detailLevels;
     this.worldGenerator = worldGenerator;
     this.colliderLODIndex = colliderLODIndex;
     this.coord = coord;
-    this.heightMapSettings = heightMapSettings;
-    // this.meshSettings = meshSettings;
     this.viewer = viewer;
 
     sampleCenter = coord * worldGenerator.meshSettings.meshWorldSize / worldGenerator.meshSettings.meshScale;
@@ -49,7 +45,6 @@ public class TerrainChunk {
 
     meshObject.transform.position = new Vector3(position.x, 0, position.y);
     meshObject.transform.parent = parent;
-
 
     int layerIdx = LayerMask.NameToLayer("Terrain");
     if (layerIdx == -1)
@@ -91,15 +86,13 @@ public class TerrainChunk {
     meshRenderer.material = worldGenerator.getMaterialForBiome(biomeData);
 
     onHeightMapReceived(worldGenerator.generateBiomeHeightmap(biomeData, coord));
-
-    // ThreadedDataRequester.requestData(() => worldGenerator.generateBiomeHeightmap(biomeData, sampleCenter), onHeightMapReceived);
   }
 
   void onHeightMapReceived(object heightMapObject) {
-    this.heightmap = (HeightMap)heightMapObject;
+    heightmap = (HeightMap)heightMapObject;
     heightMapReceived = true;
 
-    worldGenerator.generateMaterialUniforms(meshRenderer.material, biomeData, heightMapSettings);
+    worldGenerator.generateMaterialUniforms(meshRenderer.material, biomeData, heightmap); // heightMapSettings);
 
     updateTerrainChunk();
   }
@@ -134,7 +127,7 @@ public class TerrainChunk {
             previousLODIndex = lodIndex;
             meshFilter.mesh = lodMesh.mesh;
           } else if (!lodMesh.hasRequestedMesh) {
-            lodMesh.requestMesh(heightmap, worldGenerator.meshSettings, heightMapSettings);
+            lodMesh.requestMesh(heightmap, worldGenerator.meshSettings); // , heightMapSettings);
           }
         }
       }
@@ -155,7 +148,7 @@ public class TerrainChunk {
 
       if (sqrDstFromViewerToEdge < detailLevels[colliderLODIndex].sqrVisibleDstThreshold) {
         if (!lodMeshes[colliderLODIndex].hasRequestedMesh)
-          lodMeshes[colliderLODIndex].requestMesh(heightmap, worldGenerator.meshSettings, heightMapSettings);
+          lodMeshes[colliderLODIndex].requestMesh(heightmap, worldGenerator.meshSettings); // , heightMapSettings);
       }
 
       if (sqrDstFromViewerToEdge < colliderGenerationDistanceThreshold * colliderGenerationDistanceThreshold) {

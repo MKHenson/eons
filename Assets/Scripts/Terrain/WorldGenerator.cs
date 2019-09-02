@@ -34,9 +34,6 @@ public class WorldGenerator : MonoBehaviour {
     textures = TextureGenerator.generateTextureArray(texturesList.ToArray(), textureSize, textureFormat);
   }
 
-  public void load(HeightMapSettings settings) {
-  }
-
   HeightMapSettings getHeightSettings(BiomeData biome) {
     foreach (BiomeMaterialSettings setting in biomes)
       if (setting.type == biome.biomeType) {
@@ -84,7 +81,7 @@ public class WorldGenerator : MonoBehaviour {
     return biomes[0];
   }
 
-  public void generateMaterialUniforms(Material material, BiomeData biome, HeightMapSettings heightMapSettings) {
+  public void generateMaterialUniforms(Material material, BiomeData biome, HeightMap heightMap) {
     BiomeMaterialSettings[] settings = new BiomeMaterialSettings[5];
     float[] heights = new float[5];
     float[] blends = new float[5];
@@ -108,9 +105,8 @@ public class WorldGenerator : MonoBehaviour {
       textureIndices[i] = Array.IndexOf(biomes, settings[i]) * 4;
     }
 
-    material.SetFloat("minHeight", heightMapSettings.minHeight);
-    material.SetFloat("maxHeight", heightMapSettings.maxHeight);
-
+    material.SetFloat("minHeight", heightMap.minValue);
+    material.SetFloat("maxHeight", heightMap.maxValue);
     material.SetFloatArray("baseStartHeights", heights);
     material.SetFloatArray("baseBlends", blends);
     material.SetFloatArray("primaryUvScales", primaryUvScales);

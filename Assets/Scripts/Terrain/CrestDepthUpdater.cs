@@ -11,13 +11,11 @@ using Crest;
 /// </summary>
 public class CrestDepthUpdater : MonoBehaviour {
   public Transform player;
-
-
-  GameObject depthRenderer;
-  OceanDepthCache cache;
-  float distanceToUpdate = 100;
-  float rendererScale = 500;
-  TerrainGenerator terrainGenerator;
+  private float distanceToUpdate = 100;
+  private float rendererScale = 500;
+  private TerrainGenerator terrainGenerator;
+  private GameObject depthRenderer;
+  private OceanDepthCache cache;
 
   private void Start() {
     depthRenderer = new GameObject("Crest Depth Renderer");
