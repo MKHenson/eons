@@ -11,13 +11,11 @@ using Crest;
 /// </summary>
 public class CrestDepthUpdater : MonoBehaviour {
   public Transform player;
-
-
   GameObject depthRenderer;
   OceanDepthCache cache;
   float distanceToUpdate = 100;
   float rendererScale = 500;
-  TerrainGenerator terrainGenerator;
+  // TerrainGenerator terrainGenerator;
 
   private void Start() {
     depthRenderer = new GameObject("Crest Depth Renderer");
@@ -25,13 +23,28 @@ public class CrestDepthUpdater : MonoBehaviour {
     depthRenderer.transform.localScale = new Vector3(rendererScale, 1, rendererScale);
     cache = depthRenderer.AddComponent<OceanDepthCache>();
     cache._layerNames = new string[] { "Terrain" };
-    terrainGenerator = transform.GetComponent<TerrainGenerator>();
-    terrainGenerator.onLoaded += onChunksLoaded;
+    // terrainGenerator = transform.GetComponent<TerrainGenerator>();
+    // terrainGenerator.onLoaded += onChunksLoaded;
   }
 
   private void onChunksLoaded() {
-    terrainGenerator.onLoaded -= onChunksLoaded;
+    // terrainGenerator.onLoaded -= onChunksLoaded;
     cache.PopulateCache();
+  }
+
+  void Awake() {
+    InitViewpoint();
+  }
+
+  void InitViewpoint() {
+    if (player == null) {
+      var camMain = Camera.main;
+      if (camMain != null) {
+        player = camMain.transform;
+      } else {
+        Debug.LogError("Please provide the viewpoint transform, or tag the primary camera as MainCamera.", this);
+      }
+    }
   }
 
   private void Update() {
