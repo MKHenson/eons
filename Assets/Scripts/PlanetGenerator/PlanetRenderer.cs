@@ -1,11 +1,16 @@
 ﻿using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 public class PlanetRenderer : MonoBehaviour {
   private Terrain terrain;
   private TerrainCollider terrainCollider;
   private WorldGenerator worldGenerator;
   private Vector3 terrainSize;
+  private float terrainLength = 200;
+  private float terrainHeight = 200;
+  private Dictionary<Vector2, GameObject> terrainChunkDictionary = new Dictionary<Vector2, GameObject>();
+  private List<GameObject> visibleTerrainChunks = new List<GameObject>();
 
   public WorldSettings worldSettings;
   public Transform viewer;
@@ -13,38 +18,69 @@ public class PlanetRenderer : MonoBehaviour {
   // Start is called before the first frame update
   void Start() {
     worldGenerator = new WorldGenerator(worldSettings);
-    terrainSize = new Vector3(1000, 600, 1000);
-    generateTerrain(Vector2.zero);
-    generateTerrain(Vector2.zero + new Vector2(1, 0));
-    generateTerrain(Vector2.zero + new Vector2(-1, 0));
-    generateTerrain(Vector2.zero + new Vector2(0, 1));
-    generateTerrain(Vector2.zero + new Vector2(0, -1));
+    terrainSize = new Vector3(terrainLength, terrainHeight, terrainLength);
+    updateChunks();
   }
 
   // Update is called once per frame
   void Update() {
-
+    updateChunks();
   }
+
+  void updateChunks() {
+    float normalizedXPos = (float)Math.Floor(viewer.position.x / terrainLength);
+    float normalizedZPos = (float)Math.Floor(viewer.position.z / terrainLength);
+    Vector2 cache = new Vector2();
+
+    foreach (GameObject chunk in visibleTerrainChunks)
+      chunk.SetActive(false);
+
+    visibleTerrainChunks.Clear();
+
+    for (float x = -1; x < 2; x++) {
+      for (float z = -1; z < 2; z++) {
+        cache.Set(normalizedXPos + x, normalizedZPos + z);
+
+        if (!terrainChunkDictionary.ContainsKey(cache)) {
+          // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
+
+          GameObject newTerrain = generateTerrain(cache);
+          terrainChunkDictionary.Add(cache, newTerrain);
+          visibleTerrainChunks.Add(newTerrain);
+        } else {
+          GameObject terrain = terrainChunkDictionary[cache];
+          visibleTerrainChunks.Add(terrain);
+        }
+
+      }
+    }
+
+    foreach (GameObject chunk in visibleTerrainChunks)
+      chunk.SetActive(true);
+  }
+
+  // void onTerrainLoaded(object terrainGO) {
+  // GameObject newTerrain = terrainGO as GameObject;
+  // terrainChunkDictionary.Add(cache, newTerrain);
+  // visibleTerrainChunks.Add(newTerrain);
+  // }
 
   void Awake() {
     InitViewpoint();
   }
 
-  void generateTerrain(Vector2 position) {
+  GameObject generateTerrain(Vector2 position) {
     string uniqueName = "Terrain_" + position.ToString();
 
     if (null != GameObject.Find(uniqueName)) {
       Debug.LogWarning("Already have a neighbor on that side");
-      return;
+      return null;
     }
-
-
-
 
     GameObject terrgainGO = new GameObject(uniqueName);
     terrgainGO.isStatic = true;
     terrgainGO.transform.parent = gameObject.transform;
-    terrgainGO.transform.position = new Vector3(-position.y, 0, position.x) * terrainSize.x;
+    terrgainGO.transform.position = new Vector3(position.x, 0, position.y) * terrainLength;
 
     int layerIdx = LayerMask.NameToLayer("Terrain");
     if (layerIdx == -1)
@@ -93,8 +129,10 @@ public class PlanetRenderer : MonoBehaviour {
 
     settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
 
-    HeightMap heightmap = HeightMapGenerator.generateHeightmap(terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight, settings, position * new Vector2(terrain.terrainData.heightmapWidth - 1, terrain.terrainData.heightmapHeight - 1));
+    HeightMap heightmap = HeightMapGenerator.generateHeightmap(terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight, settings, new Vector2(position.y, -position.x) * new Vector2(terrain.terrainData.heightmapWidth - 1, terrain.terrainData.heightmapHeight - 1));
     terrain.terrainData.SetHeights(0, 0, heightmap.values);
+
+    return terrgainGO;
   }
 
   void InitViewpoint() {
