@@ -7,6 +7,7 @@ public class PlanetRenderer : MonoBehaviour {
   private TerrainCollider terrainCollider;
   private WorldGenerator worldGenerator;
   private Vector3 terrainSize;
+  private int heightmapSize = 512;
   private float terrainLength = 200;
   private float terrainHeight = 200;
   private Dictionary<Vector2, GameObject> terrainChunkDictionary = new Dictionary<Vector2, GameObject>();
@@ -27,7 +28,18 @@ public class PlanetRenderer : MonoBehaviour {
     updateChunks();
   }
 
-  void updateChunks() {
+  private Biome getBiome(Vector2 position) {
+    Biome toReturn = null;
+    if (position.x == 0 && position.y == 0)
+      toReturn = new Grassland();
+    else
+      toReturn = new Grassland();
+
+    toReturn.generate(heightmapSize + 1, new Vector2(position.y, -position.x) * new Vector2(heightmapSize, heightmapSize));
+    return toReturn;
+  }
+
+  private void updateChunks() {
     float normalizedXPos = (float)Math.Floor(viewer.position.x / terrainLength);
     float normalizedZPos = (float)Math.Floor(viewer.position.z / terrainLength);
     Vector2 cache = new Vector2();
@@ -43,8 +55,8 @@ public class PlanetRenderer : MonoBehaviour {
 
         if (!terrainChunkDictionary.ContainsKey(cache)) {
           // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
-
-          GameObject newTerrain = generateTerrain(cache);
+          Biome biome = getBiome(cache);
+          GameObject newTerrain = generateTerrain(cache, biome);
           terrainChunkDictionary.Add(cache, newTerrain);
           visibleTerrainChunks.Add(newTerrain);
         } else {
@@ -69,7 +81,7 @@ public class PlanetRenderer : MonoBehaviour {
     InitViewpoint();
   }
 
-  GameObject generateTerrain(Vector2 position) {
+  GameObject generateTerrain(Vector2 position, Biome biome) {
     string uniqueName = "Terrain_" + position.ToString();
 
     if (null != GameObject.Find(uniqueName)) {
@@ -95,8 +107,8 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.terrainData = new TerrainData();
     terrain.terrainData.name = Guid.NewGuid().ToString();
     terrain.terrainData.baseMapResolution = 1024;
-    terrain.terrainData.heightmapResolution = 513;
-    terrain.terrainData.alphamapResolution = 512;
+    terrain.terrainData.heightmapResolution = heightmapSize + 1;
+    terrain.terrainData.alphamapResolution = heightmapSize;
     terrain.terrainData.SetDetailResolution(512, 8);
     terrain.drawInstanced = false;
     terrain.allowAutoConnect = true;
@@ -113,24 +125,24 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.terrainData.size = terrainSize;
 
     // Create base later
-    Grassland grassland = new Grassland();
-    terrain.terrainData.terrainLayers = grassland.generateLayers();
+    terrain.terrainData.terrainLayers = biome.layers;
+    terrain.terrainData.SetHeights(0, 0, biome.heightmap.values);
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;
 
-    HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
-    settings.useFalloff = true;
-    settings.noiseSettings = new NoiseSettings();
-    settings.noiseSettings.scale = 400;
-    settings.noiseSettings.octaves = 4;
-    settings.noiseSettings.lacunarity = 2.2f;
-    settings.noiseSettings.persistance = 0.6f;
+    // HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
+    // settings.useFalloff = true;
+    // settings.noiseSettings = new NoiseSettings();
+    // settings.noiseSettings.scale = 400;
+    // settings.noiseSettings.octaves = 4;
+    // settings.noiseSettings.lacunarity = 2.2f;
+    // settings.noiseSettings.persistance = 0.6f;
 
-    settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
+    // settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
 
-    HeightMap heightmap = HeightMapGenerator.generateHeightmap(terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight, settings, new Vector2(position.y, -position.x) * new Vector2(terrain.terrainData.heightmapWidth - 1, terrain.terrainData.heightmapHeight - 1));
-    terrain.terrainData.SetHeights(0, 0, heightmap.values);
+    // HeightMap heightmap = HeightMapGenerator.generateHeightmap(terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight, settings, new Vector2(position.y, -position.x) * new Vector2(terrain.terrainData.heightmapWidth - 1, terrain.terrainData.heightmapHeight - 1));
+    // terrain.terrainData.SetHeights(0, 0, heightmap.values);
 
     return terrgainGO;
   }

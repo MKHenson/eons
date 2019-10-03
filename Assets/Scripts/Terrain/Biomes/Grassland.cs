@@ -7,7 +7,20 @@ public class Grassland : Biome {
   private static Texture2D grassNormalMap;
 
   public Grassland() : base(BiomeType.Grassland) {
+  }
 
+  public override HeightMap generateHeightmap(int size, Vector2 offset) {
+    HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
+    settings.useFalloff = true;
+    settings.noiseSettings = new NoiseSettings();
+    settings.noiseSettings.scale = 400;
+    settings.noiseSettings.octaves = 4;
+    settings.noiseSettings.lacunarity = 2.2f;
+    settings.noiseSettings.persistance = 0.6f;
+
+    settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
+
+    return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
   }
 
   public override TerrainLayer[] generateLayers() {
