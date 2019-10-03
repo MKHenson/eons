@@ -33,7 +33,7 @@ public class PlanetRenderer : MonoBehaviour {
     if (position.x == 0 && position.y == 0)
       toReturn = new Grassland();
     else
-      toReturn = new Grassland();
+      toReturn = new Mountains();
 
     toReturn.generate(heightmapSize + 1, new Vector2(position.y, -position.x) * new Vector2(heightmapSize, heightmapSize));
     return toReturn;

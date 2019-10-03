@@ -13,10 +13,10 @@ public class Grassland : Biome {
     HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
     settings.useFalloff = true;
     settings.noiseSettings = new NoiseSettings();
-    settings.noiseSettings.scale = 400;
-    settings.noiseSettings.octaves = 4;
-    settings.noiseSettings.lacunarity = 2.2f;
-    settings.noiseSettings.persistance = 0.6f;
+    settings.noiseSettings.scale = 1600;
+    settings.noiseSettings.octaves = 5;
+    settings.noiseSettings.lacunarity = 2.3f;
+    settings.noiseSettings.persistance = 0.61f;
 
     settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
 
