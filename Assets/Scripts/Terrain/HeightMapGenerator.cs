@@ -326,4 +326,8 @@ public struct HeightMap {
     this.minValue = minValue;
     this.maxValue = maxValue;
   }
+
+  public HeightMap clone() {
+    return new HeightMap(values.Clone() as float[,], minValue, maxValue);
+  }
 }

@@ -2,7 +2,21 @@
 using System;
 using System.Collections.Generic;
 
+public class Chunk {
+  public GameObject terrainGO;
+  public Terrain terrain;
+  public Biome biome;
+
+  public Chunk(GameObject terrainGO, Terrain terrain, Biome biome) {
+    this.terrainGO = terrainGO;
+    this.biome = biome;
+    this.terrain = terrain;
+  }
+}
+
+
 public class PlanetRenderer : MonoBehaviour {
+
   private Terrain terrain;
   private TerrainCollider terrainCollider;
   private WorldGenerator worldGenerator;
@@ -10,9 +24,8 @@ public class PlanetRenderer : MonoBehaviour {
   private int heightmapSize = 512;
   private float terrainLength = 200;
   private float terrainHeight = 200;
-  private Dictionary<Vector2, GameObject> terrainChunkDictionary = new Dictionary<Vector2, GameObject>();
-  private List<GameObject> visibleTerrainChunks = new List<GameObject>();
-
+  private Dictionary<Vector2, Chunk> terrainChunkDictionary = new Dictionary<Vector2, Chunk>();
+  private List<Chunk> visibleTerrainChunks = new List<Chunk>();
   public WorldSettings worldSettings;
   public Transform viewer;
 
@@ -43,32 +56,48 @@ public class PlanetRenderer : MonoBehaviour {
     float normalizedXPos = (float)Math.Floor(viewer.position.x / terrainLength);
     float normalizedZPos = (float)Math.Floor(viewer.position.z / terrainLength);
     Vector2 cache = new Vector2();
+    Chunk[,] chunkMap = new Chunk[3, 3];
 
-    foreach (GameObject chunk in visibleTerrainChunks)
-      chunk.SetActive(false);
+    foreach (Chunk chunk in visibleTerrainChunks)
+      chunk.terrainGO.SetActive(false);
 
     visibleTerrainChunks.Clear();
+    bool geometryChanged = false;
 
     for (float x = -1; x < 2; x++) {
       for (float z = -1; z < 2; z++) {
-        cache.Set(normalizedXPos + x, normalizedZPos + z);
 
-        if (!terrainChunkDictionary.ContainsKey(cache)) {
-          // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
-          Biome biome = getBiome(cache);
-          GameObject newTerrain = generateTerrain(cache, biome);
-          terrainChunkDictionary.Add(cache, newTerrain);
-          visibleTerrainChunks.Add(newTerrain);
-        } else {
-          GameObject terrain = terrainChunkDictionary[cache];
-          visibleTerrainChunks.Add(terrain);
+        if ((x == 0 && z == 0) || (x == -1 && z == 0)) {
+          cache.Set(normalizedXPos + x, normalizedZPos + z);
+          Chunk chunk;
+
+          if (!terrainChunkDictionary.ContainsKey(cache)) {
+            // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
+            Biome biome = getBiome(cache);
+            GameObject newTerrain = generateTerrain(cache, biome);
+            chunk = new Chunk(newTerrain, newTerrain.GetComponent<Terrain>(), biome);
+            geometryChanged = true;
+
+            terrainChunkDictionary.Add(cache, chunk);
+            visibleTerrainChunks.Add(chunk);
+          } else {
+            chunk = terrainChunkDictionary[cache];
+            visibleTerrainChunks.Add(chunk);
+          }
+
+          chunkMap[(int)x + 1, (int)z + 1] = chunk;
         }
-
       }
     }
 
-    foreach (GameObject chunk in visibleTerrainChunks)
-      chunk.SetActive(true);
+    for (int i = 0, l = visibleTerrainChunks.Count; i < l; i++) {
+      visibleTerrainChunks[i].terrainGO.SetActive(true);
+
+      if (geometryChanged) {
+        visibleTerrainChunks[i].biome.blendEdges(chunkMap);
+        visibleTerrainChunks[i].terrain.terrainData.SetHeights(0, 0, visibleTerrainChunks[i].biome.processedHeightmap.values);
+      }
+    }
   }
 
   // void onTerrainLoaded(object terrainGO) {
@@ -126,24 +155,10 @@ public class PlanetRenderer : MonoBehaviour {
 
     // Create base later
     terrain.terrainData.terrainLayers = biome.layers;
-    terrain.terrainData.SetHeights(0, 0, biome.heightmap.values);
+    terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;
-
-    // HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
-    // settings.useFalloff = true;
-    // settings.noiseSettings = new NoiseSettings();
-    // settings.noiseSettings.scale = 400;
-    // settings.noiseSettings.octaves = 4;
-    // settings.noiseSettings.lacunarity = 2.2f;
-    // settings.noiseSettings.persistance = 0.6f;
-
-    // settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
-
-    // HeightMap heightmap = HeightMapGenerator.generateHeightmap(terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight, settings, new Vector2(position.y, -position.x) * new Vector2(terrain.terrainData.heightmapWidth - 1, terrain.terrainData.heightmapHeight - 1));
-    // terrain.terrainData.SetHeights(0, 0, heightmap.values);
-
     return terrgainGO;
   }
 
