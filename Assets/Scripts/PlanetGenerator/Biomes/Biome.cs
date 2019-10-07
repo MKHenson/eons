@@ -18,6 +18,7 @@ public abstract class Biome {
   protected HeightMap _heightMap;
   protected HeightMap _processedHeightMap;
   protected TerrainLayer[] _layers;
+  protected Vector2 _position;
 
   public Biome(BiomeType type) {
     this._type = type;
@@ -35,23 +36,27 @@ public abstract class Biome {
     }
   }
 
-  public float sample(Chunk[,] chunks, int x, int y, int heightmapSize) {
-    int whichSampleX = 1;
-    int whichSampleY = 1;
+  public float sample(Chunk[,] chunks, int x, int y, int heightmapSize, Vector2Int chunkIndex) {
+    int whichSampleX = 0;
+    int whichSampleY = 0;
 
     if (x < 0)
-      whichSampleX = 0;
+      whichSampleX = -1;
     else if (x >= heightmapSize)
-      whichSampleX = 2;
+      whichSampleX = 1;
 
     if (y < 0)
-      whichSampleY = 0;
+      whichSampleY = -1;
     else if (y >= heightmapSize)
-      whichSampleY = 2;
+      whichSampleY = 1;
 
-    // int targetChunk = whichSampleY * 3 + whichSampleX;
-    // if (targetChunk < 0 || targetChunk >= chunks.Count)
-    //   return -1;
+    whichSampleX = chunkIndex.x + whichSampleX;
+    whichSampleY = chunkIndex.y + whichSampleY;
+
+    if (whichSampleX < 0 || whichSampleX > 2)
+      return -1;
+    if (whichSampleY < 0 || whichSampleY > 2)
+      return -1;
 
     Chunk chunk = chunks[whichSampleX, whichSampleY];
 
@@ -61,7 +66,8 @@ public abstract class Biome {
     float[,] values = chunk.biome._heightMap.values;
     int normalizedX = x < 0 ? heightmapSize + x : x >= heightmapSize ? x - heightmapSize : x;
     int normalizedY = y < 0 ? heightmapSize + y : y >= heightmapSize ? y - heightmapSize : y;
-    return values[normalizedX, normalizedY];
+    float toReturn = values[normalizedY, normalizedX];
+    return toReturn;
   }
 
   public void blendEdges(Chunk[,] chunks) {
@@ -70,27 +76,41 @@ public abstract class Biome {
     float[,] processedHeightmap = _processedHeightMap.values;
     int radius = 2;
     int halfRadius = radius / 2;
-    float average = 0;
-    int divCount = 0;
+    Vector2Int curChunkIndex = new Vector2Int();
+
+    for (int i = 0; i < 3; i++)
+      for (int j = 0; j < 3; j++)
+        if (chunks[i, j] != null && chunks[i, j].biome == this) {
+          curChunkIndex.x = i;
+          curChunkIndex.y = j;
+          break;
+        }
+
+
+    // float average = 0;
+    // int divCount = 0;
 
     for (int i = 0; i < heightmapSize; i++)
       for (int j = 0; j < heightmapSize; j++) {
         if (!((i > halfRadius && i < heightmapSize - halfRadius) && (j > halfRadius && j < heightmapSize - halfRadius))) {
 
-          average = -1;
-          divCount = 0;
+          // average = -1;
+          // divCount = 0;
 
-          for (int rx = -halfRadius; rx < halfRadius; rx++)
-            for (int ry = -halfRadius; ry < halfRadius; ry++) {
-              float sampleValue = sample(chunks, (rx) + i, (ry) + j, heightmapSize);
-              if (sampleValue != -1) {
-                average += sampleValue;
-                divCount++;
-              }
-            }
+          float h = sample(chunks, i, j, heightmapSize, curChunkIndex);
+          processedHeightmap[i, j] = 0;
 
-          if (average != -1)
-            processedHeightmap[i, j] = average / divCount;
+          // for (int rx = -halfRadius; rx < halfRadius; rx++)
+          //   for (int ry = -halfRadius; ry < halfRadius; ry++) {
+          //     float sampleValue = sample(chunks, (rx) + i, (ry) + j, heightmapSize);
+          //     if (sampleValue != -1) {
+          //       average += sampleValue;
+          //       divCount++;
+          //     }
+          //   }
+
+          // if (average != -1)
+          //   processedHeightmap[i, j] = average / divCount;
         }
       }
   }
@@ -105,6 +125,11 @@ public abstract class Biome {
 
   public HeightMap processedHeightmap {
     get { return _processedHeightMap; }
+  }
+
+  public Vector2 position {
+    get { return _position; }
+    set { _position = value; }
   }
 
   public abstract TerrainLayer[] generateLayers();

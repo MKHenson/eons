@@ -48,6 +48,7 @@ public class PlanetRenderer : MonoBehaviour {
     else
       toReturn = new Mountains();
 
+    toReturn.position = position;
     toReturn.generate(heightmapSize + 1, new Vector2(position.y, -position.x) * new Vector2(heightmapSize, heightmapSize));
     return toReturn;
   }
