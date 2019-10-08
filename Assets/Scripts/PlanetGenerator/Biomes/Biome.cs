@@ -28,12 +28,12 @@ public abstract class Biome {
     _layers = generateLayers();
     _heightMap = generateHeightmap(size, offset);
     _processedHeightMap = _heightMap.clone();
-    for (int i = 0; i < size; i++) {
-      _processedHeightMap.values[0, i] = 0.0f;
-      _processedHeightMap.values[i, 0] = 0.0f;
-      _processedHeightMap.values[i, size - 1] = 0.0f;
-      _processedHeightMap.values[size - 1, i] = 0.0f;
-    }
+    // for (int i = 0; i < size; i++) {
+    //   _processedHeightMap.values[0, i] = 0.0f;
+    //   _processedHeightMap.values[i, 0] = 0.0f;
+    //   _processedHeightMap.values[i, size - 1] = 0.0f;
+    //   _processedHeightMap.values[size - 1, i] = 0.0f;
+    // }
   }
 
   public float sample(Chunk[,] chunks, int x, int y, int heightmapSize, Vector2Int chunkIndex) {

@@ -95,8 +95,8 @@ public class PlanetRenderer : MonoBehaviour {
       visibleTerrainChunks[i].terrainGO.SetActive(true);
 
       if (geometryChanged) {
-        visibleTerrainChunks[i].biome.blendEdges(chunkMap);
-        visibleTerrainChunks[i].terrain.terrainData.SetHeights(0, 0, visibleTerrainChunks[i].biome.processedHeightmap.values);
+        // visibleTerrainChunks[i].biome.blendEdges(chunkMap);
+        // visibleTerrainChunks[i].terrain.terrainData.SetHeights(0, 0, visibleTerrainChunks[i].biome.processedHeightmap.values);
       }
     }
   }
