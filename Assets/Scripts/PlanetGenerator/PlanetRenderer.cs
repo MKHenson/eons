@@ -22,8 +22,8 @@ public class PlanetRenderer : MonoBehaviour {
   private WorldGenerator worldGenerator;
   private Vector3 terrainSize;
   private int heightmapSize = 512;
-  private float terrainLength = 200;
-  private float terrainHeight = 200;
+  private float terrainLength = 500;
+  private float terrainHeight = 80;
   private Dictionary<Vector2, Chunk> terrainChunkDictionary = new Dictionary<Vector2, Chunk>();
   private List<Chunk> visibleTerrainChunks = new List<Chunk>();
   public WorldSettings worldSettings;
@@ -68,26 +68,26 @@ public class PlanetRenderer : MonoBehaviour {
     for (float x = -1; x < 2; x++) {
       for (float z = -1; z < 2; z++) {
 
-        if ((x == 0 && z == 0) || (x == -1 && z == 0)) {
-          cache.Set(normalizedXPos + x, normalizedZPos + z);
-          Chunk chunk;
 
-          if (!terrainChunkDictionary.ContainsKey(cache)) {
-            // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
-            Biome biome = getBiome(cache);
-            GameObject newTerrain = generateTerrain(cache, biome);
-            chunk = new Chunk(newTerrain, newTerrain.GetComponent<Terrain>(), biome);
-            geometryChanged = true;
+        cache.Set(normalizedXPos + x, normalizedZPos + z);
+        Chunk chunk;
 
-            terrainChunkDictionary.Add(cache, chunk);
-            visibleTerrainChunks.Add(chunk);
-          } else {
-            chunk = terrainChunkDictionary[cache];
-            visibleTerrainChunks.Add(chunk);
-          }
+        if (!terrainChunkDictionary.ContainsKey(cache)) {
+          // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
+          Biome biome = getBiome(cache);
+          GameObject newTerrain = generateTerrain(cache, biome);
+          chunk = new Chunk(newTerrain, newTerrain.GetComponent<Terrain>(), biome);
+          geometryChanged = true;
 
-          chunkMap[(int)x + 1, (int)z + 1] = chunk;
+          terrainChunkDictionary.Add(cache, chunk);
+          visibleTerrainChunks.Add(chunk);
+        } else {
+          chunk = terrainChunkDictionary[cache];
+          visibleTerrainChunks.Add(chunk);
         }
+
+        chunkMap[(int)x + 1, (int)z + 1] = chunk;
+
       }
     }
 

@@ -11,12 +11,13 @@ public class Grassland : Biome {
 
   public override HeightMap generateHeightmap(int size, Vector2 offset) {
     HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
+    settings.heightMultiplier = 0.2f;
     settings.useFalloff = true;
     settings.noiseSettings = new NoiseSettings();
-    settings.noiseSettings.scale = 1600;
+    settings.noiseSettings.scale = 200;
     settings.noiseSettings.octaves = 5;
-    settings.noiseSettings.lacunarity = 2.3f;
-    settings.noiseSettings.persistance = 0.61f;
+    settings.noiseSettings.lacunarity = 2.1f;
+    settings.noiseSettings.persistance = 0.6f;
 
     settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
 

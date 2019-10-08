@@ -12,13 +12,14 @@ public class Mountains : Biome {
   public override HeightMap generateHeightmap(int size, Vector2 offset) {
     HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
     settings.useFalloff = true;
+    settings.heightMultiplier = 1;
     settings.noiseSettings = new NoiseSettings();
-    settings.noiseSettings.scale = 600;
-    settings.noiseSettings.octaves = 5;
+    settings.noiseSettings.scale = 100;
+    settings.noiseSettings.octaves = 6;
     settings.noiseSettings.lacunarity = 2.1f;
-    settings.noiseSettings.persistance = 0.61f;
+    settings.noiseSettings.persistance = 0.51f;
 
-    settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
+    settings.heightCurve = new AnimationCurve(new Keyframe[] { new Keyframe(0, 0), new Keyframe(0.7f, 0.15f), new Keyframe(1, 1) });
 
     return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
   }
