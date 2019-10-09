@@ -10,7 +10,7 @@ public class Grassland : Biome {
   }
 
   public override HeightMap generateHeightmap(int size, Vector2 offset) {
-    HeightMapSettings settings = ScriptableObject.CreateInstance("HeightMapSettings") as HeightMapSettings;
+    HeightmapSettings settings = new HeightmapSettings();
     settings.heightMultiplier = 0.2f;
     settings.useFalloff = true;
     settings.noiseSettings = new NoiseSettings();

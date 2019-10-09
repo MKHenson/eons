@@ -7,12 +7,38 @@ public class Chunk {
   public GameObject terrainGO;
   public Terrain terrain;
   public Biome biome;
-  public bool geometryChanged = true;
+  public bool geometryChanged;
+  public bool requiresStitch;
 
-  public Chunk(GameObject terrainGO, Terrain terrain, Biome biome) {
+  public Chunk(GameObject terrainGO, Biome biome) {
     this.terrainGO = terrainGO;
     this.biome = biome;
-    this.terrain = terrain;
+    geometryChanged = false;
+    requiresStitch = false;
+    this.terrain = terrainGO.GetComponent<Terrain>();
+  }
+
+  public void initialize() {
+    int heightmapSize = terrain.terrainData.heightmapWidth;
+    Vector2 offset = new Vector2(biome.position.y, -biome.position.x) * new Vector2(heightmapSize - 1, heightmapSize - 1);
+
+    // ThreadedDataRequester.requestData(() => {
+    //   return biome.generate(heightmapSize, offset);
+    // }, onBiomeLoaded);
+
+    onBiomeLoaded(biome.generate(heightmapSize, offset));
+  }
+
+  private void onBiomeLoaded(object biomeData) {
+    Biome biome = biomeData as Biome;
+
+    // Create base later
+    TerrainLayer[] layers = biome.generateLayers();
+    terrain.terrainData.terrainLayers = layers;
+
+    // Create the heights
+    terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
+    requiresStitch = true;
   }
 }
 
@@ -52,7 +78,6 @@ public class PlanetRenderer : MonoBehaviour {
       toReturn = new Mountains();
 
     toReturn.position = position;
-    toReturn.generate(heightmapSize + 1, new Vector2(position.y, -position.x) * new Vector2(heightmapSize, heightmapSize));
     return toReturn;
   }
 
@@ -68,23 +93,16 @@ public class PlanetRenderer : MonoBehaviour {
     visibleTerrainChunks.Clear();
     chunksToStitch.Clear();
 
-    // bool geometryChanged = false;
-    Dictionary<int[], Terrain> terrainsToStitch = new Dictionary<int[], Terrain>(new IntArrayComparer());
-
     for (float x = -1; x < 2; x++) {
       for (float z = -1; z < 2; z++) {
-
-
         cache.Set(normalizedXPos + x, normalizedZPos + z);
         Chunk chunk;
 
         if (!terrainChunkDictionary.ContainsKey(cache)) {
-          // ThreadedDataRequester.requestData(() => generateTerrain(cache), onTerrainLoaded);
           Biome biome = getBiome(cache);
           GameObject newTerrain = generateTerrain(cache, biome);
-          chunk = new Chunk(newTerrain, newTerrain.GetComponent<Terrain>(), biome);
-          // geometryChanged = true;
-
+          chunk = new Chunk(newTerrain, biome);
+          chunk.initialize();
           terrainChunkDictionary.Add(cache, chunk);
           visibleTerrainChunks.Add(chunk);
         } else {
@@ -97,14 +115,17 @@ public class PlanetRenderer : MonoBehaviour {
     }
 
     for (int i = 0, l = visibleTerrainChunks.Count; i < l; i++) {
-      visibleTerrainChunks[i].terrainGO.SetActive(true);
+      if (visibleTerrainChunks[i].requiresStitch)
+        visibleTerrainChunks[i].terrainGO.SetActive(false);
+      else
+        visibleTerrainChunks[i].terrainGO.SetActive(true);
     }
 
     for (int x = 0; x < 3; x++)
       for (int z = 0; z < 3; z++)
-        if (chunkMap[x, z].geometryChanged) {
+        if (chunkMap[x, z].requiresStitch) {
 
-          chunkMap[x, z].geometryChanged = false;
+          chunkMap[x, z].requiresStitch = false;
 
           if (!chunksToStitch.Contains(chunkMap[x, z]))
             chunksToStitch.Add(chunkMap[x, z]);
@@ -116,22 +137,30 @@ public class PlanetRenderer : MonoBehaviour {
 
               if (normalizedX >= 0 && normalizedZ >= 0 && normalizedX < 3 && normalizedZ < 3) {
                 if (chunkMap[normalizedX, normalizedZ].biome.GetType() != chunkMap[x, z].biome.GetType())
-                  if (!chunksToStitch.Contains(chunkMap[x, z]))
-                    chunksToStitch.Add(chunkMap[x, z]);
+                  if (!chunksToStitch.Contains(chunkMap[normalizedX, normalizedZ]))
+                    chunksToStitch.Add(chunkMap[normalizedX, normalizedZ]);
               }
             }
 
         }
 
     if (chunksToStitch.Count > 0) {
+      //   ThreadedDataRequester.requestData(() => {
+      //     Debug.Log("We are chunking");
+      //     Chunk[] stitchedChunks = chunksToStitch.ToArray();
+      //     Stitcher.StitchTerrain(chunksToStitch.Select(chunk => chunk.terrain).ToArray(), 20);
+      //     return stitchedChunks;
+      //   }, onStitchComplete);
+
       Stitcher.StitchTerrain(chunksToStitch.Select(chunk => chunk.terrain).ToArray(), 10);
     }
   }
 
-  // void onTerrainLoaded(object terrainGO) {
-  // GameObject newTerrain = terrainGO as GameObject;
-  // terrainChunkDictionary.Add(cache, newTerrain);
-  // visibleTerrainChunks.Add(newTerrain);
+  // void onStitchComplete(object chunks) {
+  //   Debug.Log("We are done chunnking");
+  //   Chunk[] stitchedChunks = chunks as Chunk[];
+  //   foreach (Chunk chunk in stitchedChunks)
+  //     chunk.requiresStitch = false;
   // }
 
   void Awake() {
@@ -166,12 +195,12 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.terrainData.baseMapResolution = 1024;
     terrain.terrainData.heightmapResolution = heightmapSize + 1;
     terrain.terrainData.alphamapResolution = heightmapSize;
-    terrain.terrainData.SetDetailResolution(512, 8);
+    terrain.terrainData.SetDetailResolution(256, 32);
     terrain.drawInstanced = false;
     terrain.allowAutoConnect = true;
     terrain.drawTreesAndFoliage = true;
-    terrain.bakeLightProbesForTrees = true;
-    terrain.deringLightProbesForTrees = true;
+    // terrain.bakeLightProbesForTrees = true;
+    // terrain.deringLightProbesForTrees = true;
     terrain.preserveTreePrototypeLayers = false;
     terrain.detailObjectDistance = 80;
     terrain.detailObjectDensity = 1;
@@ -180,10 +209,6 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
     terrain.terrainData.size = terrainSize;
-
-    // Create base later
-    terrain.terrainData.terrainLayers = biome.layers;
-    terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;

@@ -293,7 +293,7 @@ public class HeightMapGenerator {
     return new HeightMap(toRet, minValue, maxValue);
   }
 
-  public static HeightMap generateHeightmap(int width, int height, HeightMapSettings settings, Vector2 sampleCenter) {
+  public static HeightMap generateHeightmap(int width, int height, HeightmapSettings settings, Vector2 sampleCenter) {
     float[,] values = Noise.generateNoiseMap(width, height, settings.noiseSettings, sampleCenter);
 
     AnimationCurve heightCurveThreadsafe = new AnimationCurve(settings.heightCurve.keys);

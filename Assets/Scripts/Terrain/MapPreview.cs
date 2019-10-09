@@ -21,22 +21,22 @@ public class MapPreview : MonoBehaviour {
   public bool autoUpdate;
 
   public void drawMapInEditor() {
-    textureData.applyToMaterial(terrainMaterial);
-    textureData.updateMeshHeights(terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
-    HeightMap heightMap = HeightMapGenerator.generateHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightMapSettings, Vector2.zero);
+    // textureData.applyToMaterial(terrainMaterial);
+    // textureData.updateMeshHeights(terrainMaterial, heightMapSettings.minHeight, heightMapSettings.maxHeight);
+    // HeightMap heightMap = HeightMapGenerator.generateHeightmap(meshSettings.numVerticesPerLine, meshSettings.numVerticesPerLine, heightMapSettings, Vector2.zero);
 
-    if (drawMode == DrawMode.NoiseMap)
-      drawTexture(TextureGenerator.textureFromHeightmap(heightMap));
-    else if (drawMode == DrawMode.Mesh) {
-      if (heightMapSettings.useFalloff) {
-        float[,] falloff = FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine);
-        for (int i = 0; i < heightMap.values.GetLength(0); i++)
-          for (int j = 0; j < heightMap.values.GetLength(1); j++)
-            heightMap.values[i, j] = heightMap.values[i, j] * (1 - falloff[i, j]);
-      }
-      drawMesh(MeshGenerator.generateTerrainMesh(heightMap.values, meshSettings, editorPreviewLOD));
-    } else if (drawMode == DrawMode.Falloff)
-      drawTexture(TextureGenerator.textureFromHeightmap(new HeightMap(FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine), 0, 1)));
+    // if (drawMode == DrawMode.NoiseMap)
+    //   drawTexture(TextureGenerator.textureFromHeightmap(heightMap));
+    // else if (drawMode == DrawMode.Mesh) {
+    //   if (heightMapSettings.useFalloff) {
+    //     float[,] falloff = FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine);
+    //     for (int i = 0; i < heightMap.values.GetLength(0); i++)
+    //       for (int j = 0; j < heightMap.values.GetLength(1); j++)
+    //         heightMap.values[i, j] = heightMap.values[i, j] * (1 - falloff[i, j]);
+    //   }
+    //   drawMesh(MeshGenerator.generateTerrainMesh(heightMap.values, meshSettings, editorPreviewLOD));
+    // } else if (drawMode == DrawMode.Falloff)
+    //   drawTexture(TextureGenerator.textureFromHeightmap(new HeightMap(FalloffGenerator.generateFalloffMap(meshSettings.numVerticesPerLine), 0, 1)));
   }
 
   public void drawTexture(Texture2D texture) {
