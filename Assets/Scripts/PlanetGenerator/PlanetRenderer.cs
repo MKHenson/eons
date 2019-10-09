@@ -1,11 +1,13 @@
 ﻿using UnityEngine;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 
 public class Chunk {
   public GameObject terrainGO;
   public Terrain terrain;
   public Biome biome;
+  public bool geometryChanged = true;
 
   public Chunk(GameObject terrainGO, Terrain terrain, Biome biome) {
     this.terrainGO = terrainGO;
@@ -26,6 +28,7 @@ public class PlanetRenderer : MonoBehaviour {
   private float terrainHeight = 80;
   private Dictionary<Vector2, Chunk> terrainChunkDictionary = new Dictionary<Vector2, Chunk>();
   private List<Chunk> visibleTerrainChunks = new List<Chunk>();
+  private List<Chunk> chunksToStitch = new List<Chunk>();
   public WorldSettings worldSettings;
   public Transform viewer;
 
@@ -43,7 +46,7 @@ public class PlanetRenderer : MonoBehaviour {
 
   private Biome getBiome(Vector2 position) {
     Biome toReturn = null;
-    if (position.x == 0 && position.y == 0)
+    if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
       toReturn = new Grassland();
     else
       toReturn = new Mountains();
@@ -63,7 +66,10 @@ public class PlanetRenderer : MonoBehaviour {
       chunk.terrainGO.SetActive(false);
 
     visibleTerrainChunks.Clear();
-    bool geometryChanged = false;
+    chunksToStitch.Clear();
+
+    // bool geometryChanged = false;
+    Dictionary<int[], Terrain> terrainsToStitch = new Dictionary<int[], Terrain>(new IntArrayComparer());
 
     for (float x = -1; x < 2; x++) {
       for (float z = -1; z < 2; z++) {
@@ -77,7 +83,7 @@ public class PlanetRenderer : MonoBehaviour {
           Biome biome = getBiome(cache);
           GameObject newTerrain = generateTerrain(cache, biome);
           chunk = new Chunk(newTerrain, newTerrain.GetComponent<Terrain>(), biome);
-          geometryChanged = true;
+          // geometryChanged = true;
 
           terrainChunkDictionary.Add(cache, chunk);
           visibleTerrainChunks.Add(chunk);
@@ -87,17 +93,38 @@ public class PlanetRenderer : MonoBehaviour {
         }
 
         chunkMap[(int)x + 1, (int)z + 1] = chunk;
-
       }
     }
 
     for (int i = 0, l = visibleTerrainChunks.Count; i < l; i++) {
       visibleTerrainChunks[i].terrainGO.SetActive(true);
+    }
 
-      if (geometryChanged) {
-        // visibleTerrainChunks[i].biome.blendEdges(chunkMap);
-        // visibleTerrainChunks[i].terrain.terrainData.SetHeights(0, 0, visibleTerrainChunks[i].biome.processedHeightmap.values);
-      }
+    for (int x = 0; x < 3; x++)
+      for (int z = 0; z < 3; z++)
+        if (chunkMap[x, z].geometryChanged) {
+
+          chunkMap[x, z].geometryChanged = false;
+
+          if (!chunksToStitch.Contains(chunkMap[x, z]))
+            chunksToStitch.Add(chunkMap[x, z]);
+
+          for (int innerX = -1; innerX < 2; innerX++)
+            for (int innerZ = -1; innerZ < 2; innerZ++) {
+              int normalizedX = innerX + x;
+              int normalizedZ = innerZ + z;
+
+              if (normalizedX >= 0 && normalizedZ >= 0 && normalizedX < 3 && normalizedZ < 3) {
+                if (chunkMap[normalizedX, normalizedZ].biome.GetType() != chunkMap[x, z].biome.GetType())
+                  if (!chunksToStitch.Contains(chunkMap[x, z]))
+                    chunksToStitch.Add(chunkMap[x, z]);
+              }
+            }
+
+        }
+
+    if (chunksToStitch.Count > 0) {
+      Stitcher.StitchTerrain(chunksToStitch.Select(chunk => chunk.terrain).ToArray(), 10);
     }
   }
 
