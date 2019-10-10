@@ -198,7 +198,17 @@ public class PlanetRenderer : MonoBehaviour {
       return null;
     }
 
-    GameObject terrgainGO = new GameObject(uniqueName);
+
+    TerrainData terrainData = new TerrainData();
+    terrainData.name = Guid.NewGuid().ToString();
+    terrainData.baseMapResolution = 1024;
+    terrainData.heightmapResolution = heightmapSize + 1;
+    terrainData.alphamapResolution = heightmapSize;
+    terrainData.SetDetailResolution(256, 64);
+    terrainData.size = terrainSize;
+
+    GameObject terrgainGO = Terrain.CreateTerrainGameObject(terrainData);
+    terrgainGO.name = uniqueName;
     terrgainGO.isStatic = true;
     terrgainGO.transform.parent = gameObject.transform;
     terrgainGO.transform.position = new Vector3(position.x, 0, position.y) * terrainLength;
@@ -209,16 +219,9 @@ public class PlanetRenderer : MonoBehaviour {
 
     terrgainGO.layer = layerIdx;
 
-    terrain = terrgainGO.AddComponent<Terrain>();
-    terrainCollider = terrgainGO.AddComponent<TerrainCollider>();
+    terrain = terrgainGO.GetComponent<Terrain>();
+    terrainCollider = terrgainGO.GetComponent<TerrainCollider>();
 
-    // Create base terrain
-    terrain.terrainData = new TerrainData();
-    terrain.terrainData.name = Guid.NewGuid().ToString();
-    terrain.terrainData.baseMapResolution = 1024;
-    terrain.terrainData.heightmapResolution = heightmapSize + 1;
-    terrain.terrainData.alphamapResolution = heightmapSize;
-    terrain.terrainData.SetDetailResolution(256, 32);
     terrain.drawInstanced = false;
     terrain.allowAutoConnect = true;
     terrain.drawTreesAndFoliage = true;
@@ -231,7 +234,6 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeBillboardDistance = 50;
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
-    terrain.terrainData.size = terrainSize;
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;
