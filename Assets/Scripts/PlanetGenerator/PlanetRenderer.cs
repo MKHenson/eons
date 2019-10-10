@@ -38,7 +38,7 @@ public class Chunk {
 
     // Create the heights
     terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
-    requiresStitch = true;
+    // requiresStitch = true;
   }
 }
 
