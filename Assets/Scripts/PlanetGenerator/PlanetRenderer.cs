@@ -25,9 +25,11 @@ public class Chunk {
     int heightmapSize = terrain.terrainData.heightmapWidth;
     Vector2 offset = new Vector2(biome.position.y, -biome.position.x) * new Vector2(heightmapSize - 1, heightmapSize - 1);
 
-    ThreadedDataRequester.requestData(() => {
-      return biome.generate(heightmapSize, offset);
-    }, onBiomeLoaded);
+    // ThreadedDataRequester.requestData(() => {
+    //   return biome.generate(heightmapSize, offset);
+    // }, onBiomeLoaded);
+
+    onBiomeLoaded(biome.generate(heightmapSize, offset));
   }
 
   private void onBiomeLoaded(object biomeData) {
@@ -170,7 +172,7 @@ public class PlanetRenderer : MonoBehaviour {
 
 
       Terrain[] terrains = chunksToStitch.Select(chunk => chunk.terrain).ToArray();
-      Stitcher.StitchTerrain(terrains, 10);
+      Stitcher.StitchTerrain(terrains, 20);
     }
   }
 

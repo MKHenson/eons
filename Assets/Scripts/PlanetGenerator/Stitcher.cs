@@ -15,29 +15,29 @@ public class Stitcher {
     Bottom
   }
 
-  public static void repairCorners(Terrain center, Terrain top, Terrain right, Terrain bottom, Terrain left, Terrain rightBottom, int checkLength) {
-    int temptLength = checkLength;
-    checkLength = 0;
+  // public static void repairCorners(Terrain center, Terrain top, Terrain right, Terrain bottom, Terrain left, Terrain rightBottom, int checkLength) {
+  //   int temptLength = checkLength;
+  //   checkLength = 0;
 
-    if (right != null)
-      StitchTerrains(center, right, Side.Right, checkLength, false);
+  //   if (right != null)
+  //     StitchTerrains(center.terrainData.GetHeights(0, 0, center.terrainData.heightmapWidth, center.terrainData.heightmapHeight), right.terrainData.GetHeights(0, 0, right.terrainData.heightmapWidth, right.terrainData.heightmapHeight), Side.Right, checkLength, false);
 
-    if (top != null)
-      StitchTerrains(center, top, Side.Top, checkLength, false);
+  //   if (top != null)
+  //     StitchTerrains(center.terrainData.GetHeights(0, 0, center.terrainData.heightmapWidth, center.terrainData.heightmapHeight), top.terrainData.GetHeights(0, 0, top.terrainData.heightmapWidth, top.terrainData.heightmapHeight), Side.Top, checkLength, false);
 
-    checkLength = temptLength;
+  //   checkLength = temptLength;
 
-    if (right != null && bottom != null) {
-      if (rightBottom != null)
-        StitchTerrainsRepair(center, right, bottom, rightBottom);
-    }
-  }
+  //   if (right != null && bottom != null) {
+  //     if (rightBottom != null)
+  //       StitchTerrainsRepair(center, right, bottom, rightBottom);
+  //   }
+  // }
 
-  private static void StitchTerrains(Terrain terrain, Terrain second, Side side, int checkLength, bool smooth = true) {
-    TerrainData terrainData = terrain.terrainData;
-    TerrainData secondData = second.terrainData;
-    float[,] heights = terrainData.GetHeights(0, 0, terrainData.heightmapWidth, terrainData.heightmapHeight);
-    float[,] secondHeights = secondData.GetHeights(0, 0, secondData.heightmapWidth, secondData.heightmapHeight);
+  private static void StitchTerrains(float[,] heights, float[,] secondHeights, Side side, int checkLength, bool smooth = true) {
+    // TerrainData terrainData = terrain.terrainData;
+    // TerrainData secondData = second.terrainData;
+    // float[,] heights = terrainData.GetHeights(0, 0, terrainData.heightmapWidth, terrainData.heightmapHeight);
+    // float[,] secondHeights = secondData.GetHeights(0, 0, secondData.heightmapWidth, secondData.heightmapHeight);
 
     if (side == Side.Right) {
       int y = heights.GetLength(0) - 1;
@@ -79,18 +79,19 @@ public class Stitcher {
       }
     }
 
-    terrainData.SetHeights(0, 0, heights);
-    terrain.terrainData = terrainData;
+    // terrainData.SetHeights(0, 0, heights);
+    // terrain.terrainData = terrainData;
 
-    secondData.SetHeights(0, 0, secondHeights);
-    second.terrainData = secondData;
+    // secondData.SetHeights(0, 0, secondHeights);
+    // second.terrainData = secondData;
 
-    terrain.Flush();
-    second.Flush();
+    // terrain.Flush();
+    // second.Flush();
   }
 
-  static void StitchTerrainsRepair(Terrain terrain11, Terrain terrain21, Terrain terrain12, Terrain terrain22) {
-    int size = terrain11.terrainData.heightmapHeight - 1;
+  //static void StitchTerrainsRepair(Terrain terrain11, Terrain terrain21, Terrain terrain12, Terrain terrain22) {
+  static void StitchTerrainsRepair(Terrain terrain11, Terrain terrain21, Terrain terrain12, Terrain terrain22, int size) {
+    // int size = terrain11.terrainData.heightmapHeight - 1;
     int size0 = 0;
     List<float> heights = new List<float>();
 
@@ -118,11 +119,11 @@ public class Stitcher {
     return Mathf.Pow((Mathf.Pow(first, power) + Mathf.Pow(second, power)) / 2.0f, 1 / power);
   }
 
-  public static void StitchTerrainsTrend(Terrain terrain, Terrain second, Side side, int checkLength) {
-    TerrainData terrainData = terrain.terrainData;
-    TerrainData secondData = second.terrainData;
-    float[,] heights = terrainData.GetHeights(0, 0, terrainData.heightmapWidth, terrainData.heightmapHeight);
-    float[,] secondHeights = secondData.GetHeights(0, 0, secondData.heightmapWidth, secondData.heightmapHeight);
+  public static void StitchTerrainsTrend(float[,] heights, float[,] secondHeights, Side side, int checkLength) {
+    // TerrainData terrainData = terrain.terrainData;
+    // TerrainData secondData = second.terrainData;
+    // float[,] heights = terrainData.GetHeights(0, 0, terrainData.heightmapWidth, terrainData.heightmapHeight);
+    // float[,] secondHeights = secondData.GetHeights(0, 0, secondData.heightmapWidth, secondData.heightmapHeight);
 
     if (side == Side.Right) {
       //int y = heights.GetLength (0) - 1;
@@ -291,14 +292,14 @@ public class Stitcher {
       }
     }
 
-    terrainData.SetHeights(0, 0, heights);
-    terrain.terrainData = terrainData;
+    // terrainData.SetHeights(0, 0, heights);
+    // terrain.terrainData = terrainData;
 
-    secondData.SetHeights(0, 0, secondHeights);
-    second.terrainData = secondData;
+    // secondData.SetHeights(0, 0, secondHeights);
+    // second.terrainData = secondData;
 
-    terrain.Flush();
-    second.Flush();
+    // terrain.Flush();
+    // second.Flush();
   }
 
   public static void StitchTerrain(Terrain[] _terrains, int checkLength) {
@@ -346,11 +347,29 @@ public class Stitcher {
         item.Value.SetNeighbors(left, top, right, bottom);
 
         item.Value.Flush();
-        if (top != null)
-          StitchTerrainsTrend(item.Value, top, Side.Top, checkLength);
+        if (top != null) {
+          float[,] itemHights = item.Value.terrainData.GetHeights(0, 0, item.Value.terrainData.heightmapWidth, item.Value.terrainData.heightmapHeight);
+          float[,] topHeights = top.terrainData.GetHeights(0, 0, top.terrainData.heightmapWidth, top.terrainData.heightmapHeight);
 
-        if (right != null)
-          StitchTerrainsTrend(item.Value, right, Side.Right, checkLength);
+          StitchTerrainsTrend(itemHights, topHeights, Side.Top, checkLength);
+
+          item.Value.terrainData.SetHeights(0, 0, itemHights);
+          top.terrainData.SetHeights(0, 0, topHeights);
+          item.Value.Flush();
+          top.Flush();
+        }
+
+        if (right != null) {
+          float[,] itemHights = item.Value.terrainData.GetHeights(0, 0, item.Value.terrainData.heightmapWidth, item.Value.terrainData.heightmapHeight);
+          float[,] rightHeights = right.terrainData.GetHeights(0, 0, right.terrainData.heightmapWidth, right.terrainData.heightmapHeight);
+
+          StitchTerrainsTrend(itemHights, rightHeights, Side.Right, checkLength);
+
+          item.Value.terrainData.SetHeights(0, 0, itemHights);
+          right.terrainData.SetHeights(0, 0, rightHeights);
+          item.Value.Flush();
+          right.Flush();
+        }
       }
 
       //Repairs corners
@@ -381,13 +400,27 @@ public class Stitcher {
         int temptLength = checkLength;
         checkLength = 0;
 
-        if (right != null)
-          StitchTerrains(item.Value, right, Side.Right, checkLength, false);
+        if (right != null) {
+          float[,] itemHights = item.Value.terrainData.GetHeights(0, 0, item.Value.terrainData.heightmapWidth, item.Value.terrainData.heightmapHeight);
+          float[,] rightHeights = right.terrainData.GetHeights(0, 0, right.terrainData.heightmapWidth, right.terrainData.heightmapHeight);
 
+          StitchTerrains(itemHights, rightHeights, Side.Right, checkLength, false);
+          item.Value.terrainData.SetHeights(0, 0, itemHights);
+          right.terrainData.SetHeights(0, 0, rightHeights);
+          item.Value.Flush();
+          right.Flush();
+        }
 
-        if (top != null)
-          StitchTerrains(item.Value, top, Side.Top, checkLength, false);
+        if (top != null) {
+          float[,] itemHights = item.Value.terrainData.GetHeights(0, 0, item.Value.terrainData.heightmapWidth, item.Value.terrainData.heightmapHeight);
+          float[,] topHeights = top.terrainData.GetHeights(0, 0, top.terrainData.heightmapWidth, top.terrainData.heightmapHeight);
 
+          StitchTerrains(itemHights, topHeights, Side.Top, checkLength, false);
+          item.Value.terrainData.SetHeights(0, 0, itemHights);
+          top.terrainData.SetHeights(0, 0, topHeights);
+          item.Value.Flush();
+          top.Flush();
+        }
         checkLength = temptLength;
 
         if (right != null && bottom != null) {
@@ -397,7 +430,7 @@ public class Stitcher {
               posTer [1] - 1
             }, out rightBottom);
           if (rightBottom != null)
-            StitchTerrainsRepair(item.Value, right, bottom, rightBottom);
+            StitchTerrainsRepair(item.Value, right, bottom, rightBottom, item.Value.terrainData.heightmapHeight - 1);
         }
 
       }
