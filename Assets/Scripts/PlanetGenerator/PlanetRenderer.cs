@@ -4,6 +4,9 @@ using System.Linq;
 using System.Collections.Generic;
 
 public class Chunk {
+  public delegate void LoadedHandler(Chunk chunk);
+  public event LoadedHandler Loaded;
+
   public GameObject terrainGO;
   public Terrain terrain;
   public Biome biome;
@@ -18,15 +21,13 @@ public class Chunk {
     this.terrain = terrainGO.GetComponent<Terrain>();
   }
 
-  public void initialize() {
+  public void load() {
     int heightmapSize = terrain.terrainData.heightmapWidth;
     Vector2 offset = new Vector2(biome.position.y, -biome.position.x) * new Vector2(heightmapSize - 1, heightmapSize - 1);
 
-    // ThreadedDataRequester.requestData(() => {
-    //   return biome.generate(heightmapSize, offset);
-    // }, onBiomeLoaded);
-
-    onBiomeLoaded(biome.generate(heightmapSize, offset));
+    ThreadedDataRequester.requestData(() => {
+      return biome.generate(heightmapSize, offset);
+    }, onBiomeLoaded);
   }
 
   private void onBiomeLoaded(object biomeData) {
@@ -38,7 +39,11 @@ public class Chunk {
 
     // Create the heights
     terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
+    terrain.Flush();
     requiresStitch = true;
+
+    if (Loaded != null)
+      Loaded(this);
   }
 }
 
@@ -57,9 +62,11 @@ public class PlanetRenderer : MonoBehaviour {
   private List<Chunk> chunksToStitch = new List<Chunk>();
   public WorldSettings worldSettings;
   public Transform viewer;
+  private int numBiomesLoading;
 
   // Start is called before the first frame update
   void Start() {
+    numBiomesLoading = 0;
     worldGenerator = new WorldGenerator(worldSettings);
     terrainSize = new Vector3(terrainLength, terrainHeight, terrainLength);
     updateChunks();
@@ -102,7 +109,9 @@ public class PlanetRenderer : MonoBehaviour {
           Biome biome = getBiome(cache);
           GameObject newTerrain = generateTerrain(cache, biome);
           chunk = new Chunk(newTerrain, biome);
-          chunk.initialize();
+          numBiomesLoading += 1;
+          chunk.Loaded += onChunkLoaded;
+          chunk.load();
           terrainChunkDictionary.Add(cache, chunk);
           visibleTerrainChunks.Add(chunk);
         } else {
@@ -125,7 +134,7 @@ public class PlanetRenderer : MonoBehaviour {
       for (int z = 0; z < 3; z++)
         if (chunkMap[x, z].requiresStitch) {
 
-          chunkMap[x, z].requiresStitch = false;
+
 
           if (!chunksToStitch.Contains(chunkMap[x, z]))
             chunksToStitch.Add(chunkMap[x, z]);
@@ -144,7 +153,10 @@ public class PlanetRenderer : MonoBehaviour {
 
         }
 
-    if (chunksToStitch.Count > 0) {
+    if (chunksToStitch.Count > 0 && numBiomesLoading == 0) {
+
+      int count = chunksToStitch.Count;
+
       //   ThreadedDataRequester.requestData(() => {
       //     Debug.Log("We are chunking");
       //     Chunk[] stitchedChunks = chunksToStitch.ToArray();
@@ -152,7 +164,13 @@ public class PlanetRenderer : MonoBehaviour {
       //     return stitchedChunks;
       //   }, onStitchComplete);
 
-      Stitcher.StitchTerrain(chunksToStitch.Select(chunk => chunk.terrain).ToArray(), 10);
+
+      foreach (Chunk chunk in chunksToStitch)
+        chunk.requiresStitch = false;
+
+
+      Terrain[] terrains = chunksToStitch.Select(chunk => chunk.terrain).ToArray();
+      Stitcher.StitchTerrain(terrains, 10);
     }
   }
 
@@ -165,6 +183,11 @@ public class PlanetRenderer : MonoBehaviour {
 
   void Awake() {
     InitViewpoint();
+  }
+
+  void onChunkLoaded(Chunk chunk) {
+    numBiomesLoading -= 1;
+    chunk.Loaded -= onChunkLoaded;
   }
 
   GameObject generateTerrain(Vector2 position, Biome biome) {
