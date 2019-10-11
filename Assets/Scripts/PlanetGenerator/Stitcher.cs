@@ -487,18 +487,15 @@ public class Stitcher {
     }
   }
 
-  public static void StitchTerrain(Dictionary<int[], float[,]> _terrainDict, int checkLength) {
-
-
-
+  public static Dictionary<int[], Chunk> StitchTerrain(Dictionary<int[], Chunk> _terrainDict, int checkLength) {
 
     //Checks neighbours and stitches them
     foreach (var item in _terrainDict) {
       int[] posTer = item.Key;
-      float[,] top = null;
-      float[,] left = null;
-      float[,] right = null;
-      float[,] bottom = null;
+      Chunk top = null;
+      Chunk left = null;
+      Chunk right = null;
+      Chunk bottom = null;
       _terrainDict.TryGetValue(new int[] {
             posTer [0],
             posTer [1] + 1
@@ -519,15 +516,15 @@ public class Stitcher {
 
 
       if (top != null) {
-        float[,] itemHights = item.Value;
-        float[,] topHeights = top;
+        float[,] itemHights = item.Value.biome.processedHeightmap.values;
+        float[,] topHeights = top.biome.processedHeightmap.values;
 
         StitchTerrainsTrend(itemHights, topHeights, Side.Top, checkLength);
       }
 
       if (right != null) {
-        float[,] itemHights = item.Value;
-        float[,] rightHeights = right;
+        float[,] itemHights = item.Value.biome.processedHeightmap.values;
+        float[,] rightHeights = right.biome.processedHeightmap.values;
 
         StitchTerrainsTrend(itemHights, rightHeights, Side.Right, checkLength);
       }
@@ -536,10 +533,10 @@ public class Stitcher {
     //Repairs corners
     foreach (var item in _terrainDict) {
       int[] posTer = item.Key;
-      float[,] top = null;
-      float[,] left = null;
-      float[,] right = null;
-      float[,] bottom = null;
+      Chunk top = null;
+      Chunk left = null;
+      Chunk right = null;
+      Chunk bottom = null;
       _terrainDict.TryGetValue(new int[] {
             posTer [0],
             posTer [1] + 1
@@ -562,15 +559,15 @@ public class Stitcher {
       checkLength = 0;
 
       if (right != null) {
-        float[,] itemHights = item.Value;
-        float[,] rightHeights = right;
+        float[,] itemHights = item.Value.biome.processedHeightmap.values;
+        float[,] rightHeights = right.biome.processedHeightmap.values;
 
         StitchTerrains(itemHights, rightHeights, Side.Right, checkLength, false);
       }
 
       if (top != null) {
-        float[,] itemHights = item.Value;
-        float[,] topHeights = top;
+        float[,] itemHights = item.Value.biome.processedHeightmap.values;
+        float[,] topHeights = top.biome.processedHeightmap.values;
 
         StitchTerrains(itemHights, topHeights, Side.Top, checkLength, false);
       }
@@ -578,23 +575,25 @@ public class Stitcher {
       checkLength = temptLength;
 
       if (right != null && bottom != null) {
-        float[,] rightBottom = null;
+        Chunk rightBottom = null;
         _terrainDict.TryGetValue(new int[] {
               posTer [0] + 1,
               posTer [1] - 1
             }, out rightBottom);
         if (rightBottom != null) {
 
-          int size = item.Value.GetLength(0);
-          int lastIndex = item.Value.GetLength(0) - 1;
-          float[,] terrainData = item.Value;
-          float[,] rightData = right;
-          float[,] bottomData = bottom;
-          float[,] rightBottomData = rightBottom;
+          int size = item.Value.biome.processedHeightmap.values.GetLength(0);
+          int lastIndex = item.Value.biome.processedHeightmap.values.GetLength(0) - 1;
+          float[,] terrainData = item.Value.biome.processedHeightmap.values;
+          float[,] rightData = right.biome.processedHeightmap.values;
+          float[,] bottomData = bottom.biome.processedHeightmap.values;
+          float[,] rightBottomData = rightBottom.biome.processedHeightmap.values;
 
           StitchTerrainsRepair(terrainData, rightData, bottomData, rightBottomData, lastIndex);
         }
       }
     }
+
+    return _terrainDict;
   }
 }

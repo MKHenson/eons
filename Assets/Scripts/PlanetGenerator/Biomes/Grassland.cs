@@ -5,6 +5,8 @@ using UnityEngine;
 public class Grassland : Biome {
   private static Texture2D grass;
   private static Texture2D grassNormalMap;
+  private static Texture2D grass2;
+  private static Texture2D grassNormalMap2;
 
   public Grassland() : base(BiomeType.Grassland) {
   }
@@ -26,18 +28,26 @@ public class Grassland : Biome {
 
   public override TerrainLayer[] generateLayers() {
     TerrainLayer[] toReturn = new TerrainLayer[] {
+        new TerrainLayer(),
         new TerrainLayer()
     };
 
     if (!grass) {
       grass = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless");
       grassNormalMap = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-norm");
+      grass2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2");
+      grassNormalMap2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2-norm");
     }
 
     toReturn[0].diffuseTexture = grass;
     toReturn[0].normalMapTexture = grassNormalMap;
-    toReturn[0].normalScale = 0.8f;
-    toReturn[0].tileOffset = new Vector2(5, 5);
+    toReturn[0].normalScale = 0.3f;
+    toReturn[0].tileSize = new Vector2(2, 2);
+
+    toReturn[1].diffuseTexture = grass2;
+    toReturn[1].normalMapTexture = grassNormalMap2;
+    toReturn[1].normalScale = 0.5f;
+    toReturn[1].tileSize = new Vector2(2, 2);
 
     return toReturn;
   }

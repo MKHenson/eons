@@ -6,7 +6,7 @@ public class Mountains : Biome {
   private static Texture2D grass;
   private static Texture2D grassNormalMap;
 
-  public Mountains() : base(BiomeType.Grassland) {
+  public Mountains() : base(BiomeType.Mountains) {
   }
 
   public override HeightMap generateHeightmap(int size, Vector2 offset) {

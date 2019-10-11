@@ -37,6 +37,10 @@ public abstract class Biome {
     return this;
   }
 
+  public BiomeType type {
+    get { return _type; }
+  }
+
   public TerrainLayer[] layers {
     get { return _layers; }
   }

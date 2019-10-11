@@ -3,6 +3,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
+
+
 public class Chunk {
   public delegate void LoadedHandler(Chunk chunk);
   public event LoadedHandler Loaded;
@@ -49,9 +51,19 @@ public class Chunk {
   }
 }
 
+public class TerrainStitchToken {
+  public string name;
+  public float[,] data;
+  public Terrain terrain;
+
+  public TerrainStitchToken(string name, float[,] data, Terrain terrain) {
+    this.name = name;
+    this.data = data;
+    this.terrain = terrain;
+  }
+}
 
 public class PlanetRenderer : MonoBehaviour {
-
   private Terrain terrain;
   private TerrainCollider terrainCollider;
   private WorldGenerator worldGenerator;
@@ -136,8 +148,6 @@ public class PlanetRenderer : MonoBehaviour {
       for (int z = 0; z < 3; z++)
         if (chunkMap[x, z].requiresStitch) {
 
-
-
           if (!chunksToStitch.Contains(chunkMap[x, z]))
             chunksToStitch.Add(chunkMap[x, z]);
 
@@ -147,7 +157,7 @@ public class PlanetRenderer : MonoBehaviour {
               int normalizedZ = innerZ + z;
 
               if (normalizedX >= 0 && normalizedZ >= 0 && normalizedX < 3 && normalizedZ < 3) {
-                if (chunkMap[normalizedX, normalizedZ].biome.GetType() != chunkMap[x, z].biome.GetType())
+                if (chunkMap[normalizedX, normalizedZ].biome.type != chunkMap[x, z].biome.type)
                   if (!chunksToStitch.Contains(chunkMap[normalizedX, normalizedZ]))
                     chunksToStitch.Add(chunkMap[normalizedX, normalizedZ]);
               }
@@ -171,42 +181,97 @@ public class PlanetRenderer : MonoBehaviour {
         chunk.requiresStitch = false;
 
 
-      Terrain[] terrains = chunksToStitch.Select(chunk => chunk.terrain).ToArray();
-      Stitcher.StitchTerrain(terrains, 20);
+      Chunk[] terrains = chunksToStitch.Select(chunk => chunk).ToArray();
+      // Stitcher.StitchTerrain(terrains, 20);
+      stitchTerrains(terrains);
     }
   }
 
-  private void stitchTerrains(Terrain[] _terrains) {
+  private void stitchTerrains(Chunk[] _terrains) {
     Vector2 firstPosition;
-    Dictionary<int[], float[,]> terrainDict = new Dictionary<int[], float[,]>(new IntArrayComparer());
+    Dictionary<int[], Chunk> terrainDataDict = new Dictionary<int[], Chunk>(new IntArrayComparer());
 
-    firstPosition = new Vector2(_terrains[0].transform.position.x, _terrains[0].transform.position.z);
+    firstPosition = new Vector2(_terrains[0].terrain.transform.position.x, _terrains[0].terrain.transform.position.z);
 
-    int sizeX = (int)_terrains[0].terrainData.size.x;
-    int sizeZ = (int)_terrains[0].terrainData.size.z;
+    int sizeX = (int)_terrains[0].terrain.terrainData.size.x;
+    int sizeZ = (int)_terrains[0].terrain.terrainData.size.z;
 
     foreach (var terrain in _terrains) {
       int[] posTer = new int[] {
-          (int)(Mathf.RoundToInt ((terrain.transform.position.x - firstPosition.x) / sizeX)),
-          (int)(Mathf.RoundToInt ((terrain.transform.position.z - firstPosition.y) / sizeZ))
+          (int)(Mathf.RoundToInt ((terrain.terrain.transform.position.x - firstPosition.x) / sizeX)),
+          (int)(Mathf.RoundToInt ((terrain.terrain.transform.position.z - firstPosition.y) / sizeZ))
         };
 
-      terrainDict.Add(posTer, terrain.terrainData.GetHeights(0, 0, terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight));
+      terrainDataDict.Add(posTer, terrain);
     }
 
-    Stitcher.StitchTerrain(terrainDict, 20);
-    foreach (var terrain in _terrains) {
-      terrain.Flush();
+    // Set the terrain neighbours
+    foreach (var item in terrainDataDict) {
+      int[] posTer = item.Key;
+      Chunk top = null;
+      Chunk left = null;
+      Chunk right = null;
+      Chunk bottom = null;
+      terrainDataDict.TryGetValue(new int[] {
+            posTer [0],
+            posTer [1] + 1
+          }, out top);
+      terrainDataDict.TryGetValue(new int[] {
+            posTer [0] - 1,
+            posTer [1]
+          }, out left);
+      terrainDataDict.TryGetValue(new int[] {
+            posTer [0] + 1,
+            posTer [1]
+          }, out right);
+      terrainDataDict.TryGetValue(new int[] {
+            posTer [0],
+            posTer [1] - 1
+          }, out bottom);
 
+      item.Value.terrain.SetNeighbors(left != null ? left.terrain : null, top != null ? top.terrain : null, right != null ? right.terrain : null, bottom != null ? bottom.terrain : null);
     }
+
+    // Perform the stitches
+    ThreadedDataRequester.requestData(() => {
+      return Stitcher.StitchTerrain(terrainDataDict, 20);
+    }, onStitchComplete);
   }
 
-  // void onStitchComplete(object chunks) {
-  //   Debug.Log("We are done chunnking");
-  //   Chunk[] stitchedChunks = chunks as Chunk[];
-  //   foreach (Chunk chunk in stitchedChunks)
-  //     chunk.requiresStitch = false;
-  // }
+  void onStitchComplete(object chunks) {
+    Dictionary<int[], Chunk> chunksDict = chunks as Dictionary<int[], Chunk>;
+    foreach (var chunk in chunksDict) {
+      chunk.Value.terrain.Flush();
+      chunk.Value.terrain.terrainData.SetHeights(0, 0, chunk.Value.biome.processedHeightmap.values);
+
+      // Blend the two terrain textures according to the steepness of
+      // the slope at each point.
+      if (chunk.Value.biome.type == BiomeType.Grassland) {
+        float[,,] map = new float[chunk.Value.terrain.terrainData.alphamapWidth, chunk.Value.terrain.terrainData.alphamapHeight, 2];
+
+        // For each point on the alphamap...
+        for (int y = 0; y < chunk.Value.terrain.terrainData.alphamapHeight; y++) {
+          for (int x = 0; x < chunk.Value.terrain.terrainData.alphamapWidth; x++) {
+            // Get the normalized terrain coordinate that
+            // corresponds to the the point.
+            float normX = x * 1.0f / (chunk.Value.terrain.terrainData.alphamapWidth - 1);
+            float normY = y * 1.0f / (chunk.Value.terrain.terrainData.alphamapHeight - 1);
+
+            // Get the steepness value at the normalized coordinate.
+            var angle = chunk.Value.terrain.terrainData.GetSteepness(normX, normY);
+
+            // Steepness is given as an angle, 0..90 degrees. Divide
+            // by 90 to get an alpha blending value in the range 0..1.
+            var frac = angle / 10.0;
+            map[x, y, 0] = (float)frac;
+            map[x, y, 1] = (float)(1 - frac);
+          }
+        }
+
+        chunk.Value.terrain.terrainData.SetAlphamaps(0, 0, map);
+      }
+    }
+  }
 
   void Awake() {
     InitViewpoint();
@@ -231,7 +296,7 @@ public class PlanetRenderer : MonoBehaviour {
     terrainData.baseMapResolution = 1024;
     terrainData.heightmapResolution = heightmapSize + 1;
     terrainData.alphamapResolution = heightmapSize;
-    terrainData.SetDetailResolution(256, 64);
+    terrainData.SetDetailResolution(512, 64);
     terrainData.size = terrainSize;
 
     GameObject terrgainGO = Terrain.CreateTerrainGameObject(terrainData);
@@ -261,6 +326,7 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeBillboardDistance = 50;
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
+    terrain.drawInstanced = true;
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;
