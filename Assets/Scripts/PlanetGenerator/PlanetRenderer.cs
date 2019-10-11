@@ -25,11 +25,11 @@ public class Chunk {
     int heightmapSize = terrain.terrainData.heightmapWidth;
     Vector2 offset = new Vector2(biome.position.y, -biome.position.x) * new Vector2(heightmapSize - 1, heightmapSize - 1);
 
-    // ThreadedDataRequester.requestData(() => {
-    //   return biome.generate(heightmapSize, offset);
-    // }, onBiomeLoaded);
+    ThreadedDataRequester.requestData(() => {
+      return biome.generate(heightmapSize, offset);
+    }, onBiomeLoaded);
 
-    onBiomeLoaded(biome.generate(heightmapSize, offset));
+    // onBiomeLoaded(biome.generate(heightmapSize, offset));
   }
 
   private void onBiomeLoaded(object biomeData) {
@@ -173,6 +173,31 @@ public class PlanetRenderer : MonoBehaviour {
 
       Terrain[] terrains = chunksToStitch.Select(chunk => chunk.terrain).ToArray();
       Stitcher.StitchTerrain(terrains, 20);
+    }
+  }
+
+  private void stitchTerrains(Terrain[] _terrains) {
+    Vector2 firstPosition;
+    Dictionary<int[], float[,]> terrainDict = new Dictionary<int[], float[,]>(new IntArrayComparer());
+
+    firstPosition = new Vector2(_terrains[0].transform.position.x, _terrains[0].transform.position.z);
+
+    int sizeX = (int)_terrains[0].terrainData.size.x;
+    int sizeZ = (int)_terrains[0].terrainData.size.z;
+
+    foreach (var terrain in _terrains) {
+      int[] posTer = new int[] {
+          (int)(Mathf.RoundToInt ((terrain.transform.position.x - firstPosition.x) / sizeX)),
+          (int)(Mathf.RoundToInt ((terrain.transform.position.z - firstPosition.y) / sizeZ))
+        };
+
+      terrainDict.Add(posTer, terrain.terrainData.GetHeights(0, 0, terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight));
+    }
+
+    Stitcher.StitchTerrain(terrainDict, 20);
+    foreach (var terrain in _terrains) {
+      terrain.Flush();
+
     }
   }
 
