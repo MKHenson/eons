@@ -43,4 +43,7 @@ public class Mountains : Biome {
 
     return toReturn;
   }
+
+  public override void generateDetails(Terrain terrain) {
+  }
 }

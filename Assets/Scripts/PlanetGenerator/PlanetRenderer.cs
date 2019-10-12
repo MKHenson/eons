@@ -246,30 +246,7 @@ public class PlanetRenderer : MonoBehaviour {
 
       // Blend the two terrain textures according to the steepness of
       // the slope at each point.
-      if (chunk.Value.biome.type == BiomeType.Grassland) {
-        float[,,] map = new float[chunk.Value.terrain.terrainData.alphamapWidth, chunk.Value.terrain.terrainData.alphamapHeight, 2];
-
-        // For each point on the alphamap...
-        for (int y = 0; y < chunk.Value.terrain.terrainData.alphamapHeight; y++) {
-          for (int x = 0; x < chunk.Value.terrain.terrainData.alphamapWidth; x++) {
-            // Get the normalized terrain coordinate that
-            // corresponds to the the point.
-            float normX = x * 1.0f / (chunk.Value.terrain.terrainData.alphamapWidth - 1);
-            float normY = y * 1.0f / (chunk.Value.terrain.terrainData.alphamapHeight - 1);
-
-            // Get the steepness value at the normalized coordinate.
-            var angle = chunk.Value.terrain.terrainData.GetSteepness(normX, normY);
-
-            // Steepness is given as an angle, 0..90 degrees. Divide
-            // by 90 to get an alpha blending value in the range 0..1.
-            var frac = angle / 10.0;
-            map[x, y, 0] = (float)frac;
-            map[x, y, 1] = (float)(1 - frac);
-          }
-        }
-
-        chunk.Value.terrain.terrainData.SetAlphamaps(0, 0, map);
-      }
+      chunk.Value.biome.generateDetails(chunk.Value.terrain);
     }
   }
 
@@ -296,7 +273,7 @@ public class PlanetRenderer : MonoBehaviour {
     terrainData.baseMapResolution = 1024;
     terrainData.heightmapResolution = heightmapSize + 1;
     terrainData.alphamapResolution = heightmapSize;
-    terrainData.SetDetailResolution(512, 64);
+    terrainData.SetDetailResolution(512, 16);
     terrainData.size = terrainSize;
 
     GameObject terrgainGO = Terrain.CreateTerrainGameObject(terrainData);
@@ -327,6 +304,7 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
     terrain.drawInstanced = true;
+    // terrain.terrainData.wavingGrassTint = Color.white;
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;

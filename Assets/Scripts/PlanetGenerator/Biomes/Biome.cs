@@ -59,5 +59,6 @@ public abstract class Biome {
   }
 
   public abstract TerrainLayer[] generateLayers();
+  public abstract void generateDetails(Terrain terrain);
   public abstract HeightMap generateHeightmap(int size, Vector2 offset);
 }
