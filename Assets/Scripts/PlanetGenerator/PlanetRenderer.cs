@@ -241,8 +241,9 @@ public class PlanetRenderer : MonoBehaviour {
   void onStitchComplete(object chunks) {
     Dictionary<int[], Chunk> chunksDict = chunks as Dictionary<int[], Chunk>;
     foreach (var chunk in chunksDict) {
-      chunk.Value.terrain.Flush();
+
       chunk.Value.terrain.terrainData.SetHeights(0, 0, chunk.Value.biome.processedHeightmap.values);
+      chunk.Value.terrain.Flush();
 
       // Blend the two terrain textures according to the steepness of
       // the slope at each point.
@@ -303,7 +304,7 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeBillboardDistance = 50;
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
-    terrain.drawInstanced = true;
+    terrain.drawInstanced = false;
     // terrain.terrainData.wavingGrassTint = Color.white;
 
     // Create terrain collider
