@@ -12,14 +12,15 @@ public class Chunk {
   public GameObject terrainGO;
   public Terrain terrain;
   public Biome biome;
-  public bool geometryChanged;
+  public bool loadingBiome;
   public bool requiresStitch;
 
   public Chunk(GameObject terrainGO, Biome biome) {
     this.terrainGO = terrainGO;
     this.biome = biome;
-    geometryChanged = false;
+    loadingBiome = false;
     requiresStitch = false;
+    loadingBiome = true;
     this.terrain = terrainGO.GetComponent<Terrain>();
   }
 
@@ -45,7 +46,7 @@ public class Chunk {
     terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
     terrain.Flush();
     requiresStitch = true;
-
+    loadingBiome = false;
     if (Loaded != null)
       Loaded(this);
   }
@@ -64,6 +65,9 @@ public class TerrainStitchToken {
 }
 
 public class PlanetRenderer : MonoBehaviour {
+  public delegate void FirstChunksLoadedHundler();
+  public event FirstChunksLoadedHundler OnFirstChunksLoaded;
+
   private Terrain terrain;
   private TerrainCollider terrainCollider;
   private WorldGenerator worldGenerator;
@@ -77,10 +81,14 @@ public class PlanetRenderer : MonoBehaviour {
   public WorldSettings worldSettings;
   public Transform viewer;
   private int numBiomesLoading;
+  private Vector2 prevNormalizedPos;
+  private bool forUpdate;
 
   // Start is called before the first frame update
   void Start() {
     numBiomesLoading = 0;
+    forUpdate = true;
+    prevNormalizedPos = new Vector2();
     worldGenerator = new WorldGenerator(worldSettings);
     terrainSize = new Vector3(terrainLength, terrainHeight, terrainLength);
     updateChunks();
@@ -103,8 +111,13 @@ public class PlanetRenderer : MonoBehaviour {
   }
 
   private void updateChunks() {
+
     float normalizedXPos = (float)Math.Floor(viewer.position.x / terrainLength);
     float normalizedZPos = (float)Math.Floor(viewer.position.z / terrainLength);
+
+    if (!forUpdate && prevNormalizedPos.x == normalizedXPos && prevNormalizedPos.y == normalizedZPos)
+      return;
+
     Vector2 cache = new Vector2();
     Chunk[,] chunkMap = new Chunk[3, 3];
 
@@ -138,7 +151,7 @@ public class PlanetRenderer : MonoBehaviour {
     }
 
     for (int i = 0, l = visibleTerrainChunks.Count; i < l; i++) {
-      if (visibleTerrainChunks[i].requiresStitch)
+      if (visibleTerrainChunks[i].requiresStitch || visibleTerrainChunks[i].loadingBiome)
         visibleTerrainChunks[i].terrainGO.SetActive(false);
       else
         visibleTerrainChunks[i].terrainGO.SetActive(true);
@@ -169,22 +182,15 @@ public class PlanetRenderer : MonoBehaviour {
 
       int count = chunksToStitch.Count;
 
-      //   ThreadedDataRequester.requestData(() => {
-      //     Debug.Log("We are chunking");
-      //     Chunk[] stitchedChunks = chunksToStitch.ToArray();
-      //     Stitcher.StitchTerrain(chunksToStitch.Select(chunk => chunk.terrain).ToArray(), 20);
-      //     return stitchedChunks;
-      //   }, onStitchComplete);
-
-
       foreach (Chunk chunk in chunksToStitch)
         chunk.requiresStitch = false;
 
-
       Chunk[] terrains = chunksToStitch.Select(chunk => chunk).ToArray();
-      // Stitcher.StitchTerrain(terrains, 20);
       stitchTerrains(terrains);
     }
+
+    prevNormalizedPos.Set(normalizedXPos, normalizedZPos);
+    forUpdate = false;
   }
 
   private void stitchTerrains(Chunk[] _terrains) {
@@ -249,6 +255,10 @@ public class PlanetRenderer : MonoBehaviour {
       // the slope at each point.
       chunk.Value.biome.generateDetails(chunk.Value.terrain);
     }
+
+    forUpdate = true;
+    if (terrainChunkDictionary.Count == 9 && OnFirstChunksLoaded != null)
+      OnFirstChunksLoaded();
   }
 
   void Awake() {
@@ -258,6 +268,7 @@ public class PlanetRenderer : MonoBehaviour {
   void onChunkLoaded(Chunk chunk) {
     numBiomesLoading -= 1;
     chunk.Loaded -= onChunkLoaded;
+    forUpdate = true;
   }
 
   GameObject generateTerrain(Vector2 position, Biome biome) {

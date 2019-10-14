@@ -69,7 +69,7 @@ public class Grassland : Biome {
     detailPrototypes[0].prototypeTexture = grassDetail1;
     detailPrototypes[0].renderMode = DetailRenderMode.Grass;
     detailPrototypes[0].healthyColor = Color.white;
-    detailPrototypes[0].dryColor = Color.white;
+    detailPrototypes[0].dryColor = new Color(1, 1, 0.7f, 1);
     detailPrototypes[0].minWidth = 2;
     detailPrototypes[0].maxWidth = 2.5f;
     detailPrototypes[0].minHeight = 1;
