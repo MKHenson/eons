@@ -5,8 +5,8 @@ using UnityEngine;
 public enum BiomeType {
   DeepOcean,
   Ocean,
-  Grassland,
   Dessert,
+  Grassland,
   TemperateForest,
   Jungle,
   Mountains,
@@ -18,7 +18,7 @@ public abstract class Biome {
   protected HeightMap _heightMap;
   protected HeightMap _processedHeightMap;
   protected TerrainLayer[] _layers;
-  protected Vector2 _position;
+  protected Vector2Int _position;
 
   public Biome(BiomeType type) {
     this._type = type;
@@ -53,12 +53,13 @@ public abstract class Biome {
     get { return _processedHeightMap; }
   }
 
-  public Vector2 position {
+  public Vector2Int position {
     get { return _position; }
     set { _position = value; }
   }
 
+  public abstract float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights);
   public abstract TerrainLayer[] generateLayers();
-  public abstract void generateDetails(Terrain terrain);
+  public abstract void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict);
   public abstract HeightMap generateHeightmap(int size, Vector2 offset);
 }

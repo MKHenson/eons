@@ -7,6 +7,7 @@ public class Mountains : Biome {
   private static Texture2D grassNormalMap;
   private static Texture2D snow;
   private static Texture2D snowNormalMap;
+  private static (float start, float end)[] layerGradients = new (float start, float end)[] { (0, 0.2f), (0.6f, 0.2f) };
 
   public Mountains() : base(BiomeType.Mountains) {
   }
@@ -56,7 +57,11 @@ public class Mountains : Biome {
     return toReturn;
   }
 
-  public override void generateDetails(Terrain terrain) {
+  public override void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
+
+    // Create base later
+    TerrainLayer[] layers = this.generateLayers();
+    terrain.terrainData.terrainLayers = layers;
 
     blendTextures(terrain);
 
@@ -69,27 +74,46 @@ public class Mountains : Biome {
     terrain.Flush();
   }
 
+  public override float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights) {
+    float[] toReturn = new float[layerGradients.Length];
+
+    int sampleX = (int)(((float)x / (float)terrainData.alphamapWidth) * (float)terrainData.heightmapWidth);
+    int sampleY = (int)(((float)y / (float)terrainData.alphamapHeight) * (float)terrainData.heightmapHeight);
+    float h = heights[sampleX, sampleY];
+
+    for (uint i = 0; i < layerGradients.Length; i++) {
+      float drawStrength = Mathf.InverseLerp(-layerGradients[i].start / 2 - 0.0001f, layerGradients[i].start / 2, h - layerGradients[i].end);
+      toReturn[i] = drawStrength < 0 ? 0 : drawStrength;
+    }
+
+    return toReturn;
+  }
+
   private void blendTextures(Terrain terrain) {
     float[,,] map = new float[terrain.terrainData.alphamapWidth, terrain.terrainData.alphamapHeight, 2];
     float[,] heights = terrain.terrainData.GetHeights(0, 0, terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight);
 
 
-    (float start, float end)[] layers = new (float start, float end)[] { (0, 0.2f), (0.6f, 0.2f) };
+
 
     // For each point on the alphamap...
     for (int y = 0; y < terrain.terrainData.alphamapHeight; y++) {
       for (int x = 0; x < terrain.terrainData.alphamapWidth; x++) {
-        int sampleX = (int)(((float)x / (float)terrain.terrainData.alphamapWidth) * (float)terrain.terrainData.heightmapWidth);
-        int sampleY = (int)(((float)y / (float)terrain.terrainData.alphamapHeight) * (float)terrain.terrainData.heightmapHeight);
-        float h = heights[sampleX, sampleY];
+        float[] blends = blendLayer(x, y, terrain.terrainData, heights);
+        // int sampleX = (int)(((float)x / (float)terrain.terrainData.alphamapWidth) * (float)terrain.terrainData.heightmapWidth);
+        // int sampleY = (int)(((float)y / (float)terrain.terrainData.alphamapHeight) * (float)terrain.terrainData.heightmapHeight);
+        // float h = heights[sampleX, sampleY];
 
-        for (uint i = 0; i < layers.Length; i++) {
-          float drawStrength = Mathf.InverseLerp(-layers[i].start / 2 - 0.0001f, layers[i].start / 2, h - layers[i].end);
-          map[x, y, i] = drawStrength < 0 ? 0 : drawStrength;
-        }
+        // for (uint i = 0; i < layerGradients.Length; i++) {
+        //   float drawStrength = Mathf.InverseLerp(-layerGradients[i].start / 2 - 0.0001f, layerGradients[i].start / 2, h - layerGradients[i].end);
+        //   map[x, y, i] = drawStrength < 0 ? 0 : drawStrength;
+        // }
 
         // map[x, y, 0] = Mathf.InverseLerp(0, 1, 1 - (h * h));
         // map[x, y, 1] = Mathf.InverseLerp(0, 1, (h * h));
+
+        for (uint i = 0; i < blends.Length; i++)
+          map[x, y, i] = blends[i];
       }
     }
 

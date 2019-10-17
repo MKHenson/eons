@@ -3,8 +3,6 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 
-
-
 public class Chunk {
   public delegate void LoadedHandler(Chunk chunk);
   public event LoadedHandler Loaded;
@@ -38,13 +36,13 @@ public class Chunk {
   private void onBiomeLoaded(object biomeData) {
     Biome biome = biomeData as Biome;
 
-    // Create base later
-    TerrainLayer[] layers = biome.generateLayers();
-    terrain.terrainData.terrainLayers = layers;
+    // // Create base later
+    // TerrainLayer[] layers = biome.generateLayers();
+    // terrain.terrainData.terrainLayers = layers;
 
-    // Create the heights
-    terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
-    terrain.Flush();
+    // // Create the heights
+    // terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
+    // terrain.Flush();
     requiresStitch = true;
     loadingBiome = false;
     if (Loaded != null)
@@ -99,7 +97,7 @@ public class PlanetRenderer : MonoBehaviour {
     updateChunks();
   }
 
-  private Biome getBiome(Vector2 position) {
+  private Biome getBiome(Vector2Int position) {
     Biome toReturn = null;
     if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
       toReturn = new Grassland();
@@ -112,13 +110,13 @@ public class PlanetRenderer : MonoBehaviour {
 
   private void updateChunks() {
 
-    float normalizedXPos = (float)Math.Floor(viewer.position.x / terrainLength);
-    float normalizedZPos = (float)Math.Floor(viewer.position.z / terrainLength);
+    int normalizedXPos = (int)Math.Floor(viewer.position.x / terrainLength);
+    int normalizedZPos = (int)Math.Floor(viewer.position.z / terrainLength);
 
     if (!forUpdate && prevNormalizedPos.x == normalizedXPos && prevNormalizedPos.y == normalizedZPos)
       return;
 
-    Vector2 cache = new Vector2();
+    Vector2Int cache = new Vector2Int();
     Chunk[,] chunkMap = new Chunk[3, 3];
 
     foreach (Chunk chunk in visibleTerrainChunks)
@@ -127,8 +125,8 @@ public class PlanetRenderer : MonoBehaviour {
     visibleTerrainChunks.Clear();
     chunksToStitch.Clear();
 
-    for (float x = -1; x < 2; x++) {
-      for (float z = -1; z < 2; z++) {
+    for (int x = -1; x < 2; x++) {
+      for (int z = -1; z < 2; z++) {
         cache.Set(normalizedXPos + x, normalizedZPos + z);
         Chunk chunk;
 
@@ -185,8 +183,10 @@ public class PlanetRenderer : MonoBehaviour {
       foreach (Chunk chunk in chunksToStitch)
         chunk.requiresStitch = false;
 
-      Chunk[] terrains = chunksToStitch.Select(chunk => chunk).ToArray();
-      stitchTerrains(terrains);
+      // Chunk[] terrains = chunksToStitch.Select(chunk => chunk).ToArray();
+
+      // stitchTerrains(terrains);
+      stitchTerrains(visibleTerrainChunks.ToArray());
     }
 
     prevNormalizedPos.Set(normalizedXPos, normalizedZPos);
@@ -240,7 +240,7 @@ public class PlanetRenderer : MonoBehaviour {
 
     // Perform the stitches
     ThreadedDataRequester.requestData(() => {
-      return Stitcher.StitchTerrain(terrainDataDict, 20);
+      return Stitcher.StitchTerrain(terrainDataDict, 10);
     }, onStitchComplete);
   }
 
@@ -249,11 +249,12 @@ public class PlanetRenderer : MonoBehaviour {
     foreach (var chunk in chunksDict) {
 
       chunk.Value.terrain.terrainData.SetHeights(0, 0, chunk.Value.biome.processedHeightmap.values);
-      chunk.Value.terrain.Flush();
 
       // Blend the two terrain textures according to the steepness of
       // the slope at each point.
-      chunk.Value.biome.generateDetails(chunk.Value.terrain);
+      chunk.Value.biome.generateDetails(chunk.Value.terrain, chunksDict);
+
+      chunk.Value.terrain.Flush();
     }
 
     forUpdate = true;
