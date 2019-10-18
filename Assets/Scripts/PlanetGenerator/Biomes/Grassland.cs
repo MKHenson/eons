@@ -21,6 +21,8 @@ public class Grassland : Biome {
   private Biome btmLeft;
   private Biome btmRight;
 
+  private static float[,] blendMask;
+
   public Grassland() : base(BiomeType.Grassland) {
   }
 
@@ -35,6 +37,20 @@ public class Grassland : Biome {
     settings.noiseSettings.persistance = 0.6f;
 
     settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
+
+    if (blendMask == null) {
+      HeightmapSettings maskSettings = new HeightmapSettings();
+      maskSettings.heightMultiplier = 1f;
+      maskSettings.useFalloff = true;
+      maskSettings.noiseSettings = new NoiseSettings();
+      maskSettings.noiseSettings.scale = 5;
+      maskSettings.noiseSettings.octaves = 6;
+      maskSettings.noiseSettings.lacunarity = 1.8f;
+      maskSettings.noiseSettings.persistance = 0.51f;
+
+      maskSettings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 1), new Keyframe(1, 1) });
+      blendMask = HeightMapGenerator.generateHeightmap(512, 512, maskSettings, offset).values;
+    }
 
     return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
   }
@@ -193,6 +209,10 @@ public class Grassland : Biome {
     return Vector2.Distance(point, center) < radius;
   }
 
+  float distanceToCircle(Vector2 point, Vector2 center, float radius) {
+    return Mathf.Abs(Vector2.Distance(point, center) - radius);
+  }
+
   public override float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights) {
     float[] toReturn = new float[2] { 0, 0 };
 
@@ -213,55 +233,168 @@ public class Grassland : Biome {
     return toReturn;
   }
 
+  /* A utility function to calculate area of triangle formed by (x1, y1),  
+   (x2, y2) and (x3, y3) */
+  private float area(float x1, float y1, float x2, float y2, float x3, float y3) {
+    return Mathf.Abs((x1 * (y2 - y3) + x2 * (y3 - y1) + x3 * (y1 - y2)) / 2.0f);
+  }
+
+  /* A function to check whether point P(x, y) lies inside the triangle formed  
+     by A(x1, y1), B(x2, y2) and C(x3, y3) */
+  bool isInside(float x1, float y1, float x2, float y2, float x3, float y3, float x, float y) {
+    /* Calculate area of triangle ABC */
+    float A = area(x1, y1, x2, y2, x3, y3);
+
+    /* Calculate area of triangle PBC */
+    float A1 = area(x, y, x2, y2, x3, y3);
+
+    /* Calculate area of triangle PAC */
+    float A2 = area(x1, y1, x, y, x3, y3);
+
+    /* Calculate area of triangle PAB */
+    float A3 = area(x1, y1, x2, y2, x, y);
+
+    /* Check if sum of A1, A2 and A3 is same as A */
+    return (A == A1 + A2 + A3);
+  }
+
+  /** 
+   Calculate the distance between
+   point pt and the segment p1 --> p2.
+  */
+  private float findDistanceToSegment(Vector2 pt, Vector2 p1, Vector2 p2) {
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+
+    if ((dx == 0) && (dy == 0)) {
+      // It's a point not a line segment.
+      dx = pt.x - p1.x;
+      dy = pt.y - p1.y;
+      return Mathf.Sqrt(dx * dx + dy * dy);
+    }
+
+    // Calculate the t that minimizes the distance.
+    float t = ((pt.x - p1.x) * dx + (pt.y - p1.y) * dy) /
+        (dx * dx + dy * dy);
+
+    // See if this represents one of the segment's
+    // end points or a point in the middle.
+    if (t < 0) {
+      Vector2 closest = new Vector2(p1.x, p1.y);
+      dx = pt.x - p1.x;
+      dy = pt.y - p1.y;
+    } else if (t > 1) {
+      Vector2 closest = new Vector2(p2.x, p2.y);
+      dx = pt.x - p2.x;
+      dy = pt.y - p2.y;
+    } else {
+      Vector2 closest = new Vector2(p1.x + t * dx, p1.y + t * dy);
+      dx = pt.x - closest.x;
+      dy = pt.y - closest.y;
+    }
+
+    return Mathf.Sqrt(dx * dx + dy * dy);
+  }
+
+  private float sampleBlendMask(float x, float y) {
+    return blendMask[(int)(x * 511), (int)(y * 511)];
+  }
+
   private void blendTextures(Terrain terrain) {
-    int halfWidth = terrain.terrainData.alphamapWidth / 2;
-    int halfHeight = terrain.terrainData.alphamapHeight / 2;
+    int w = terrain.terrainData.alphamapWidth;
+    int h = terrain.terrainData.alphamapHeight;
+    int halfWidth = w / 2;
+    int halfHeight = h / 2;
 
     // int numLayers = 2;
     // if (topLeft != null)
     //   numLayers++;
 
-    float[,,] map = new float[terrain.terrainData.alphamapWidth, terrain.terrainData.alphamapHeight, terrain.terrainData.terrainLayers.Count()];
+    float[,,] map = new float[w, h, terrain.terrainData.terrainLayers.Count()];
     Vector2 center = new Vector2(halfWidth, halfHeight);
 
     // For each point on the alphamap...
-    for (int y = 0; y < terrain.terrainData.alphamapHeight; y++) {
-      for (int x = 0; x < terrain.terrainData.alphamapWidth; x++) {
+    for (int y = 0; y < h; y++) {
+      for (int x = 0; x < w; x++) {
 
         Vector2 xyPos = new Vector2(x, y);
+
         float[] curBiomeLayers = blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
 
-        if (topLeft != null && x < halfWidth && y < halfHeight && !PointInsideSphere(xyPos, center, halfWidth)) {
-          map[x, y, 0] = 0;
-          map[x, y, 1] = 0;
 
+        if (topLeft != null && isInside(0, 0, halfWidth, 0, 0, halfHeight, x, y)) {
+
+          // float distanceToRadius = distanceToCircle(xyPos, center, halfWidth);
+          // float t = Mathf.InverseLerp(20, 0, distanceToRadius);
+          // float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+
+
+
+          // Other
           float[] blends = topLeft.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
-          map[x, y, 2] = blends[0];
-          map[x, y, 3] = blends[1];
+
+          float distToPlane = findDistanceToSegment(xyPos, new Vector2(halfWidth, 0), new Vector2(0, halfHeight));
+          float t = Mathf.InverseLerp(40, 0, distToPlane);
+
+          // Grass
+          map[x, y, 0] = curBiomeLayers[0] * (t);
+          map[x, y, 1] = curBiomeLayers[1] * (t);
+
+          map[x, y, 2] = blends[0] * (1 - t);
+          map[x, y, 3] = blends[1] * (1 - t);
+
+          for (int i = 0; i < 4; i++)
+            map[x, y, i] = Mathf.Min(Mathf.Max(map[x, y, i], 0), 1);
+
+        } else if (topLeft != null && x < halfWidth && y < halfHeight && !PointInsideSphere(xyPos, center, halfWidth)) {
+
+          float distanceToRadius = distanceToCircle(xyPos, center, halfWidth);
+          float t = Mathf.InverseLerp(20, 0, distanceToRadius);
+
+          // Grass
+          map[x, y, 0] = curBiomeLayers[0] * t;
+          map[x, y, 1] = curBiomeLayers[1] * t;
+
+          // Other
+          float[] blends = topLeft.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+
+          map[x, y, 2] = blends[0] * (1 - t);
+          map[x, y, 3] = blends[1] * (1 - t);
 
         } else if (topRight != null && y < halfHeight && !PointInsideSphere(xyPos, center, halfWidth)) {
-          map[x, y, 0] = 0;
-          map[x, y, 1] = 0;
-          map[x, y, 2] = 1;
+          float distanceToRadius = distanceToCircle(xyPos, center, halfWidth);
+          float t = Mathf.InverseLerp(20, 0, distanceToRadius);
+
+          // Grass
+          map[x, y, 0] = curBiomeLayers[0] * t;
+          map[x, y, 1] = curBiomeLayers[1] * t;
 
           float[] blends = topRight.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
-          map[x, y, 2] = blends[0];
-          map[x, y, 3] = blends[1];
+          map[x, y, 2] = blends[0] * (1 - t);
+          map[x, y, 3] = blends[1] * (1 - t);
         } else if (btmLeft != null && x < halfWidth && !PointInsideSphere(xyPos, center, halfWidth)) {
-          map[x, y, 0] = 0;
-          map[x, y, 1] = 0;
+          float distanceToRadius = distanceToCircle(xyPos, center, halfWidth);
+          float t = Mathf.InverseLerp(20, 0, distanceToRadius);
+
+          // Grass
+          map[x, y, 0] = curBiomeLayers[0] * t;
+          map[x, y, 1] = curBiomeLayers[1] * t;
 
           float[] blends = btmLeft.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
-          map[x, y, 2] = blends[0];
-          map[x, y, 3] = blends[1];
+          map[x, y, 2] = blends[0] * (1 - t);
+          map[x, y, 3] = blends[1] * (1 - t);
 
         } else if (btmRight != null && !PointInsideSphere(xyPos, center, halfWidth)) {
-          map[x, y, 0] = 0;
-          map[x, y, 1] = 0;
+          float distanceToRadius = distanceToCircle(xyPos, center, halfWidth);
+          float t = Mathf.InverseLerp(20, 0, distanceToRadius);
+
+          // Grass
+          map[x, y, 0] = curBiomeLayers[0] * t;
+          map[x, y, 1] = curBiomeLayers[1] * t;
 
           float[] blends = btmRight.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
-          map[x, y, 2] = blends[0];
-          map[x, y, 3] = blends[1];
+          map[x, y, 2] = blends[0] * (1 - t);
+          map[x, y, 3] = blends[1] * (1 - t);
 
         } else {
           // // Get the normalized terrain coordinate that
