@@ -7,7 +7,7 @@ public class Mountains : Biome {
   private static Texture2D grassNormalMap;
   private static Texture2D snow;
   private static Texture2D snowNormalMap;
-  private static (float start, float end)[] layerGradients = new (float start, float end)[] { (0, 0.2f), (0.6f, 0.2f) };
+  private static (float start, float end)[] layerGradients = new (float start, float end)[] { (-.2f, 0.5f), (0.5f, 1f) };
 
   public Mountains() : base(BiomeType.Mountains) {
   }
@@ -17,12 +17,12 @@ public class Mountains : Biome {
     settings.useFalloff = true;
     settings.heightMultiplier = 1;
     settings.noiseSettings = new NoiseSettings();
-    settings.noiseSettings.scale = 100;
+    settings.noiseSettings.scale = 360;
     settings.noiseSettings.octaves = 6;
-    settings.noiseSettings.lacunarity = 2.2f;
-    settings.noiseSettings.persistance = 0.51f;
+    settings.noiseSettings.lacunarity = 2.1f;
+    settings.noiseSettings.persistance = 0.6f;
 
-    settings.heightCurve = new AnimationCurve(new Keyframe[] { new Keyframe(0, 0), new Keyframe(0.5f, 0.3f), new Keyframe(1, 1) });
+    settings.heightCurve = new AnimationCurve(new Keyframe[] { new Keyframe(0, 0), new Keyframe(0.5f, 0.6f), new Keyframe(1, 1) });
 
     return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
   }
@@ -63,7 +63,7 @@ public class Mountains : Biome {
     TerrainLayer[] layers = this.generateLayers();
     terrain.terrainData.terrainLayers = layers;
 
-    blendTextures(terrain);
+    blendTextures(terrain, processedHeightmap.values);
 
     terrain.terrainData.wavingGrassTint = Color.white;
     terrain.terrainData.wavingGrassSpeed = 1;
@@ -82,19 +82,21 @@ public class Mountains : Biome {
     float h = heights[sampleX, sampleY];
 
     for (uint i = 0; i < layerGradients.Length; i++) {
-      float drawStrength = Mathf.InverseLerp(-layerGradients[i].start / 2 - 0.0001f, layerGradients[i].start / 2, h - layerGradients[i].end);
+      float drawStrength = Mathf.InverseLerp(layerGradients[i].start, layerGradients[i].end, h);
       toReturn[i] = drawStrength < 0 ? 0 : drawStrength;
     }
+
+    float t = Mathf.InverseLerp(0, heightmap.maxValue, h);
+    float t2 = Mathf.InverseLerp(0.0f, 1f, t);
+
+    toReturn[0] = 1 - t2;
+    toReturn[1] = t2;
 
     return toReturn;
   }
 
-  private void blendTextures(Terrain terrain) {
+  private void blendTextures(Terrain terrain, float[,] heights) {
     float[,,] map = new float[terrain.terrainData.alphamapWidth, terrain.terrainData.alphamapHeight, 2];
-    float[,] heights = terrain.terrainData.GetHeights(0, 0, terrain.terrainData.heightmapWidth, terrain.terrainData.heightmapHeight);
-
-
-
 
     // For each point on the alphamap...
     for (int y = 0; y < terrain.terrainData.alphamapHeight; y++) {

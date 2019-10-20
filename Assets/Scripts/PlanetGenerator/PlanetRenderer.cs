@@ -240,7 +240,7 @@ public class PlanetRenderer : MonoBehaviour {
 
     // Perform the stitches
     ThreadedDataRequester.requestData(() => {
-      return Stitcher.StitchTerrain(terrainDataDict, 10);
+      return Stitcher.StitchTerrain(terrainDataDict, 20);
     }, onStitchComplete);
   }
 
@@ -307,8 +307,6 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.drawInstanced = false;
     terrain.allowAutoConnect = true;
     terrain.drawTreesAndFoliage = true;
-    // terrain.bakeLightProbesForTrees = true;
-    // terrain.deringLightProbesForTrees = true;
     terrain.preserveTreePrototypeLayers = false;
     terrain.detailObjectDistance = 80;
     terrain.detailObjectDensity = 1;
@@ -317,7 +315,8 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
     terrain.drawInstanced = false;
-    // terrain.terrainData.wavingGrassTint = Color.white;
+    terrain.materialTemplate = Resources.Load<Material>("Terrain/TerrainMaterial");
+    terrain.terrainData.alphamapResolution = 1024;
 
     // Create terrain collider
     terrainCollider.terrainData = terrain.terrainData;
