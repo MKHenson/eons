@@ -60,6 +60,7 @@ public abstract class Biome {
 
   public abstract float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights);
   public abstract TerrainLayer[] generateLayers();
+  public abstract int getNumLayers();
   public abstract void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict);
   public abstract HeightMap generateHeightmap(int size, Vector2 offset);
 }

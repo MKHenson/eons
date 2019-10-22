@@ -142,10 +142,12 @@ void SplatmapMix(Input IN, out half4 splat_control, out half weight, out fixed4 
         fixed4 splat3 = tex2D(_Splat3, uvSplat3);
 
         // Set the base texture
-        mixedDiffuse += splat_control.r * splat0 * half4(1.0, 1.0, 1.0, defaultAlpha.r);
+        // mixedDiffuse += splat_control.r * splat0 * half4(1.0, 1.0, 1.0, defaultAlpha.r);
         mixedDiffuse = heightlerp( splat0, splat0.a, splat1, splat1.a, splat_control.g );
         mixedDiffuse = heightlerp( mixedDiffuse, splat1.a, splat2, splat2.a, splat_control.b );
         mixedDiffuse = heightlerp( mixedDiffuse, splat2.a, splat3, splat3.a, splat_control.a );
+
+
 
         // mixedDiffuse += splat_control.r * splat0 * half4(1.0, 1.0, 1.0, defaultAlpha.r);
         // mixedDiffuse += splat_control.g * splat1 * half4(1.0, 1.0, 1.0, defaultAlpha.g);

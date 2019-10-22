@@ -57,6 +57,10 @@ public class Mountains : Biome {
     return toReturn;
   }
 
+  public override int getNumLayers() {
+    return 2;
+  }
+
   public override void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
 
     // Create base later
