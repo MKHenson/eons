@@ -518,20 +518,52 @@ public class Grassland : Biome {
     Vector2 center = new Vector2(halfWidth, halfHeight);
 
     Chunk top = null;
+    Chunk right = null;
+    Chunk bottom = null;
+    Chunk left = null;
+    Chunk topLeft = null;
+    Chunk topRight = null;
+    Chunk btmLeft = null;
+    Chunk btmRight = null;
     chunksDict.TryGetValue(new int[] { -position.x, -position.y - 1 }, out top);
+    chunksDict.TryGetValue(new int[] { -position.x + 1, -position.y }, out right);
+    chunksDict.TryGetValue(new int[] { -position.x, -position.y + 1 }, out bottom);
+    chunksDict.TryGetValue(new int[] { -position.x - 1, -position.y }, out left);
+    chunksDict.TryGetValue(new int[] { -position.x - 1, -position.y - 1 }, out topLeft);
+    chunksDict.TryGetValue(new int[] { -position.x + 1, -position.y - 1 }, out topRight);
+    chunksDict.TryGetValue(new int[] { -position.x - 1, -position.y + 1 }, out btmLeft);
+    chunksDict.TryGetValue(new int[] { -position.x + 1, -position.y + 1 }, out btmRight);
+
     int numLayers = getNumLayers();
-    int blendDistance = 200;
+    int blendDistance = 400;
     int topLayerIndex = top != null ? otherBiomes.FindIndex(biome => biome.type == top.biome.type) : -1;
     int topLayerTextureIndex = numLayers + topLayerIndex;
+    int rightLayerIndex = right != null ? otherBiomes.FindIndex(biome => biome.type == right.biome.type) : -1;
+    int rightLayerTextureIndex = numLayers + rightLayerIndex;
+    int btmLayerIndex = bottom != null ? otherBiomes.FindIndex(biome => biome.type == bottom.biome.type) : -1;
+    int btmLayerTextureIndex = numLayers + btmLayerIndex;
+    int leftLayerIndex = left != null ? otherBiomes.FindIndex(biome => biome.type == left.biome.type) : -1;
+    int leftLayerTextureIndex = numLayers + leftLayerIndex;
+    int topleftLayerIndex = topLeft != null ? otherBiomes.FindIndex(biome => biome.type == topLeft.biome.type) : -1;
+    int topleftLayerTextureIndex = numLayers + topleftLayerIndex;
+    int toprightLayerIndex = topLeft != null ? otherBiomes.FindIndex(biome => biome.type == topRight.biome.type) : -1;
+    int toprightLayerTextureIndex = numLayers + toprightLayerIndex;
+    int btmleftLayerIndex = btmLeft != null ? otherBiomes.FindIndex(biome => biome.type == btmLeft.biome.type) : -1;
+    int btmleftLayerTextureIndex = numLayers + btmleftLayerIndex;
+    int btmrightLayerIndex = btmRight != null ? otherBiomes.FindIndex(biome => biome.type == btmRight.biome.type) : -1;
+    int btmrightLayerTextureIndex = numLayers + btmrightLayerIndex;
 
+    bool insideSquare = true;
     // For each point on the alphamap...
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
 
         Vector2 xyPos = new Vector2(x, y);
+        insideSquare = true;
 
         float[] curBiomeLayers = blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
 
+        // Top
         if (top != null && y < blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
           float t = Mathf.InverseLerp(0, blendDistance, y);
@@ -545,7 +577,125 @@ public class Grassland : Biome {
           for (var i = 0; i < layerIndices[topLayerIndex]; i++)
             map[x, y, topLayerTextureIndex + i] = blends[i] * inverseT;
 
-        } else {
+          insideSquare = false;
+
+        }
+        // Bottom
+        else if (bottom != null && y > h - blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.InverseLerp(h - blendDistance, h, y);
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * inverseT;
+
+          float[] blends = bottom.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[btmLayerIndex]; i++)
+            map[x, y, btmLayerTextureIndex + i] = blends[i] * t;
+
+          insideSquare = false;
+        }
+
+        // Left
+        if (left != null && x < blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.InverseLerp(0, blendDistance, x);
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * t;
+
+          float[] blends = left.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[btmLayerIndex]; i++)
+            map[x, y, leftLayerTextureIndex + i] = blends[i] * inverseT;
+
+          insideSquare = false;
+        }
+        // Right
+        else if (right != null && x > w - blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.InverseLerp(w - blendDistance, w, x);
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * inverseT;
+
+          float[] blends = right.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[btmLayerIndex]; i++)
+            map[x, y, rightLayerTextureIndex + i] = blends[i] * t;
+
+          insideSquare = false;
+        }
+
+        // Top left corner
+        if (topLeft != null && y < blendDistance && x < blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.Min(Mathf.InverseLerp(0, blendDistance, y), Mathf.InverseLerp(0, blendDistance, x));
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * t;
+
+          float[] blends = right.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[topleftLayerIndex]; i++)
+            map[x, y, topleftLayerTextureIndex + i] = blends[i] * inverseT;
+
+          insideSquare = false;
+        }
+        // Top Right corner
+        else if (topRight != null && y < blendDistance && x > w - blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.Min(Mathf.InverseLerp(0, blendDistance, y), Mathf.InverseLerp(w, w - blendDistance, x));
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * t;
+
+          float[] blends = topRight.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[toprightLayerIndex]; i++)
+            map[x, y, toprightLayerTextureIndex + i] = blends[i] * inverseT;
+
+          insideSquare = false;
+        }
+        // Btm left corner
+        else if (btmLeft != null && y > h - blendDistance && x < blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.Min(Mathf.InverseLerp(h, h - blendDistance, y), Mathf.InverseLerp(0, blendDistance, x));
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * t;
+
+          float[] blends = btmLeft.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[btmleftLayerIndex]; i++)
+            map[x, y, btmleftLayerTextureIndex + i] = blends[i] * inverseT;
+
+          insideSquare = false;
+        }
+        // Btm Right corner
+        else if (btmRight != null && y > h - blendDistance && x > w - blendDistance) {
+          float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
+          float t = Mathf.Min(Mathf.InverseLerp(h, h - blendDistance, y), Mathf.InverseLerp(w, w - blendDistance, x));
+          t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
+          float inverseT = 1.0f - t;
+
+          for (var i = 0; i < numLayers; i++)
+            map[x, y, i] = curBiomeLayers[i] * t;
+
+          float[] blends = btmRight.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          for (var i = 0; i < layerIndices[btmrightLayerIndex]; i++)
+            map[x, y, btmrightLayerTextureIndex + i] = blends[i] * inverseT;
+
+          insideSquare = false;
+        }
+
+        if (insideSquare) {
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = curBiomeLayers[i];
         }
