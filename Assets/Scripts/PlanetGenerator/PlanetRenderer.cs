@@ -99,7 +99,9 @@ public class PlanetRenderer : MonoBehaviour {
 
   private Biome getBiome(Vector2Int position) {
     Biome toReturn = null;
-    if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
+    if (position.x == -2 && position.y == -1)
+      toReturn = new Dessert();
+    else if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
       toReturn = new Grassland();
     else
       toReturn = new Mountains();
