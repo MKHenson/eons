@@ -99,10 +99,16 @@ public class PlanetRenderer : MonoBehaviour {
 
   private Biome getBiome(Vector2Int position) {
     Biome toReturn = null;
-    if (position.x == -2 && position.y == -2)
+    // if (position.x == -2 && position.y == -2)
+    //   toReturn = new Dessert();
+    // else if (position.x == 0 && position.y == 0)
+    //   toReturn = new Dessert();
+    if (position.x == 0 && position.y == -2)
       toReturn = new Dessert();
-    else if (position.x == 0 && position.y == 0)
+    else if (position.x == -2 && position.y == 0)
       toReturn = new Dessert();
+    // else if (position.x == -1 && position.y == -2)
+    //   toReturn = new Dessert();
     else if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
       toReturn = new Grassland();
     else
