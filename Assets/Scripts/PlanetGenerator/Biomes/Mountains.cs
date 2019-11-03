@@ -63,10 +63,11 @@ public class Mountains : Biome {
 
   public override void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
 
+    // base.generateDetails(terrain, chunksDict);
+
     // Create base later
     TerrainLayer[] layers = this.generateLayers();
     terrain.terrainData.terrainLayers = layers;
-
     blendTextures(terrain, processedHeightmap.values);
 
     terrain.terrainData.wavingGrassTint = Color.white;
