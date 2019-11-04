@@ -5,12 +5,12 @@ using UnityEngine;
 public enum BiomeType {
   DeepOcean,
   Ocean,
-  Dessert,
   Grassland,
   TemperateForest,
   Jungle,
   Mountains,
-  SnowyPeaks
+  SnowyPeaks,
+  Dessert
 }
 
 public abstract class Biome {
@@ -108,6 +108,20 @@ public abstract class Biome {
     chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] + 1 }, out btmLeft);
     chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] + 1 }, out btmRight);
 
+    // Find predominants for each corner
+    if (topLeft != null && top != null && left != null) {
+      topLeft = (new List<Chunk> { topLeft, top, left }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    }
+    if (topRight != null && top != null && right != null) {
+      topRight = (new List<Chunk> { topRight, top, right }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    }
+    if (btmLeft != null && bottom != null && left != null) {
+      btmLeft = (new List<Chunk> { btmLeft, bottom, left }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    }
+    if (btmRight != null && bottom != null && right != null) {
+      btmRight = (new List<Chunk> { btmRight, bottom, right }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    }
+
     int numLayers = getNumLayers();
     int blendDistance = 400;
     int topLayerIndex = top != null ? otherBiomes.FindIndex(biome => biome.type == top.biome.type) : -1;
@@ -118,6 +132,7 @@ public abstract class Biome {
     int btmLayerTextureIndex = bottom != null ? numLayers + otherBiomes.Sum(biome => biome.type < bottom.biome.type ? biome.getNumLayers() : 0) : -1;
     int leftLayerIndex = left != null ? otherBiomes.FindIndex(biome => biome.type == left.biome.type) : -1;
     int leftLayerTextureIndex = left != null ? numLayers + otherBiomes.Sum(biome => biome.type < left.biome.type ? biome.getNumLayers() : 0) : -1;
+
     int topleftLayerIndex = topLeft != null ? otherBiomes.FindIndex(biome => biome.type == topLeft.biome.type) : -1;
     int topleftLayerTextureIndex = topLeft != null ? numLayers + otherBiomes.Sum(biome => biome.type < topLeft.biome.type ? biome.getNumLayers() : 0) : -1;
     int toprightLayerIndex = topRight != null ? otherBiomes.FindIndex(biome => biome.type == topRight.biome.type) : -1;
@@ -276,7 +291,7 @@ public abstract class Biome {
     foreach (var chunk in chunksDict) {
       texturesAlreadyAdded = false;
 
-      if (chunk.Value.biome.type == this.type)
+      if (chunk.Value.biome.type <= this.type)
         continue;
 
       foreach (var innerChunk in sortedList)
