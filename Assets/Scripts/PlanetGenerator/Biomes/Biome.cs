@@ -81,66 +81,108 @@ public abstract class Biome {
     return blendMask[(int)(x * 511), (int)(y * 511)];
   }
 
+  protected float getSteepness(int x, int y, int width, int height, float[,] heights, Vector3 size) {
+    float slopeX = heights[x < width - 1 ? x + 1 : x, y] - heights[x > 0 ? x - 1 : x, y];
+    float slopeZ = heights[x, y < height - 1 ? y + 1 : y] - heights[x, y > 0 ? y - 1 : y];
+
+    if (x == 0 || x == width - 1)
+      slopeX *= 2;
+    if (y == 0 || y == height - 1)
+      slopeZ *= 2;
+
+    // Heightmap width = heightmap height
+    Vector3 normal = new Vector3(-slopeX, heightmap.maxValue, slopeZ);
+    normal.Normalize();
+
+    float steepness = Mathf.Acos(Vector3.Dot(normal, Vector3.up));
+    return Mathf.Rad2Deg * steepness;
+  }
+
   protected void blendTextures(Terrain terrain, List<Biome> otherBiomes, int[] layerIndices, Dictionary<int[], Chunk> chunksDict) {
     int w = terrain.terrainData.alphamapWidth;
     int h = terrain.terrainData.alphamapHeight;
     int halfWidth = w / 2;
     int halfHeight = h / 2;
     int[] positinInDictionary = chunksDict.FirstOrDefault(x => x.Value.biome == this).Key;
-
-    float[,,] map = new float[w, h, terrain.terrainData.terrainLayers.Count()];
+    int totalNumLayers = terrain.terrainData.terrainLayers.Count();
+    float[,,] map = new float[w, h, totalNumLayers];
     Vector2 center = new Vector2(halfWidth, halfHeight);
 
-    Chunk top = null;
-    Chunk right = null;
-    Chunk bottom = null;
-    Chunk left = null;
-    Chunk topLeft = null;
-    Chunk topRight = null;
-    Chunk btmLeft = null;
-    Chunk btmRight = null;
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] - 1 }, out top);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] }, out right);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] + 1 }, out bottom);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] }, out left);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] - 1 }, out topLeft);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] - 1 }, out topRight);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] + 1 }, out btmLeft);
-    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] + 1 }, out btmRight);
+    // Chunk top = null;
+    // Chunk right = null;
+    // Chunk bottom = null;
+    // Chunk left = null;
+    // Chunk topLeft = null;
+    // Chunk topRight = null;
+    // Chunk btmLeft = null;
+    // Chunk btmRight = null;
+
+    Chunk[] chunks = new Chunk[] {
+      null, // Top - 0
+      null, // Right - 1
+      null, // Btm - 2
+      null, // left - 3
+      null, // Top Left - 4
+      null, // Top Right - 5
+      null, // Btm Left - 6
+      null // Btm Right - 7
+    };
+
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] - 1 }, out top);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] }, out right);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] + 1 }, out bottom);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] }, out left);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] - 1 }, out topLeft);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] - 1 }, out topRight);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] + 1 }, out btmLeft);
+    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] + 1 }, out btmRight);
+
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] - 1 }, out chunks[0]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] }, out chunks[1]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] + 1 }, out chunks[2]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] }, out chunks[3]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] - 1 }, out chunks[4]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] - 1 }, out chunks[5]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] + 1 }, out chunks[6]);
+    chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] + 1 }, out chunks[7]);
 
     // Find predominants for each corner
-    if (topLeft != null && top != null && left != null) {
-      topLeft = (new List<Chunk> { topLeft, top, left }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    if (chunks[4] != null && chunks[0] != null && chunks[3] != null) {
+      chunks[4] = (new List<Chunk> { chunks[4], chunks[0], chunks[3] }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
     }
-    if (topRight != null && top != null && right != null) {
-      topRight = (new List<Chunk> { topRight, top, right }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    if (chunks[5] != null && chunks[0] != null && chunks[1] != null) {
+      chunks[5] = (new List<Chunk> { chunks[5], chunks[0], chunks[1] }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
     }
-    if (btmLeft != null && bottom != null && left != null) {
-      btmLeft = (new List<Chunk> { btmLeft, bottom, left }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    if (chunks[6] != null && chunks[2] != null && chunks[3] != null) {
+      chunks[6] = (new List<Chunk> { chunks[6], chunks[2], chunks[3] }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
     }
-    if (btmRight != null && bottom != null && right != null) {
-      btmRight = (new List<Chunk> { btmRight, bottom, right }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
+    if (chunks[7] != null && chunks[2] != null && chunks[1] != null) {
+      chunks[7] = (new List<Chunk> { chunks[7], chunks[2], chunks[1] }).OrderByDescending(chunk => chunk.biome.type).ToArray().First();
     }
+
+    for (int i = 0, l = chunks.Length; i < l; i++)
+      if (chunks[i] != null && chunks[i].biome.type <= type)
+        chunks[i] = null;
 
     int numLayers = getNumLayers();
     int blendDistance = 400;
-    int topLayerIndex = top != null ? otherBiomes.FindIndex(biome => biome.type == top.biome.type) : -1;
-    int topLayerTextureIndex = top != null ? numLayers + otherBiomes.Sum(biome => biome.type < top.biome.type ? biome.getNumLayers() : 0) : -1;
-    int rightLayerIndex = right != null ? otherBiomes.FindIndex(biome => biome.type == right.biome.type) : -1;
-    int rightLayerTextureIndex = right != null ? numLayers + otherBiomes.Sum(biome => biome.type < right.biome.type ? biome.getNumLayers() : 0) : -1;
-    int btmLayerIndex = bottom != null ? otherBiomes.FindIndex(biome => biome.type == bottom.biome.type) : -1;
-    int btmLayerTextureIndex = bottom != null ? numLayers + otherBiomes.Sum(biome => biome.type < bottom.biome.type ? biome.getNumLayers() : 0) : -1;
-    int leftLayerIndex = left != null ? otherBiomes.FindIndex(biome => biome.type == left.biome.type) : -1;
-    int leftLayerTextureIndex = left != null ? numLayers + otherBiomes.Sum(biome => biome.type < left.biome.type ? biome.getNumLayers() : 0) : -1;
+    int topLayerIndex = chunks[0] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[0].biome.type) : -1;
+    int topLayerTextureIndex = chunks[0] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[0].biome.type ? biome.getNumLayers() : 0) : -1;
+    int rightLayerIndex = chunks[1] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[1].biome.type) : -1;
+    int rightLayerTextureIndex = chunks[1] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[1].biome.type ? biome.getNumLayers() : 0) : -1;
+    int btmLayerIndex = chunks[2] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[2].biome.type) : -1;
+    int btmLayerTextureIndex = chunks[2] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[2].biome.type ? biome.getNumLayers() : 0) : -1;
+    int leftLayerIndex = chunks[3] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[3].biome.type) : -1;
+    int leftLayerTextureIndex = chunks[3] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[3].biome.type ? biome.getNumLayers() : 0) : -1;
 
-    int topleftLayerIndex = topLeft != null ? otherBiomes.FindIndex(biome => biome.type == topLeft.biome.type) : -1;
-    int topleftLayerTextureIndex = topLeft != null ? numLayers + otherBiomes.Sum(biome => biome.type < topLeft.biome.type ? biome.getNumLayers() : 0) : -1;
-    int toprightLayerIndex = topRight != null ? otherBiomes.FindIndex(biome => biome.type == topRight.biome.type) : -1;
-    int toprightLayerTextureIndex = topRight != null ? numLayers + otherBiomes.Sum(biome => biome.type < topRight.biome.type ? biome.getNumLayers() : 0) : -1;
-    int btmleftLayerIndex = btmLeft != null ? otherBiomes.FindIndex(biome => biome.type == btmLeft.biome.type) : -1;
-    int btmleftLayerTextureIndex = btmLeft != null ? numLayers + otherBiomes.Sum(biome => biome.type < btmLeft.biome.type ? biome.getNumLayers() : 0) : -1;
-    int btmrightLayerIndex = btmRight != null ? otherBiomes.FindIndex(biome => biome.type == btmRight.biome.type) : -1;
-    int btmrightLayerTextureIndex = btmRight != null ? numLayers + otherBiomes.Sum(biome => biome.type < btmRight.biome.type ? biome.getNumLayers() : 0) : -1;
+    int topleftLayerIndex = chunks[4] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[4].biome.type) : -1;
+    int topleftLayerTextureIndex = chunks[4] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[4].biome.type ? biome.getNumLayers() : 0) : -1;
+    int toprightLayerIndex = chunks[5] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[5].biome.type) : -1;
+    int toprightLayerTextureIndex = chunks[5] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[5].biome.type ? biome.getNumLayers() : 0) : -1;
+    int btmleftLayerIndex = chunks[6] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[6].biome.type) : -1;
+    int btmleftLayerTextureIndex = chunks[6] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[6].biome.type ? biome.getNumLayers() : 0) : -1;
+    int btmrightLayerIndex = chunks[7] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[7].biome.type) : -1;
+    int btmrightLayerTextureIndex = chunks[7] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[7].biome.type ? biome.getNumLayers() : 0) : -1;
 
     // For each point on the alphamap...
     for (int y = 0; y < h; y++) {
@@ -162,7 +204,7 @@ public abstract class Biome {
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = map[x, y, i] * t;
 
-          float[] blends = left.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[3].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[leftLayerIndex]; i++)
             map[x, y, leftLayerTextureIndex + i] = blends[i] * inverseT;
 
@@ -171,14 +213,14 @@ public abstract class Biome {
         // right
         else if (rightLayerIndex != -1 && y > h - blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
-          float t = Mathf.InverseLerp(h - blendDistance, h, y);
+          float t = Mathf.InverseLerp(h - blendDistance - 1, h - 1, y);
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = map[x, y, i] * inverseT;
 
-          float[] blends = right.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[1].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[rightLayerIndex]; i++)
             map[x, y, rightLayerTextureIndex + i] = blends[i] * t;
         }
@@ -193,7 +235,7 @@ public abstract class Biome {
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
 
-          float[] blends = top.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[0].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[topLayerIndex]; i++)
             map[x, y, topLayerTextureIndex + i] = Mathf.Max(map[x, y, topLayerTextureIndex + i], blends[i] * inverseT);
 
@@ -201,14 +243,14 @@ public abstract class Biome {
         // btm
         else if (btmLayerIndex != -1 && x > w - blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
-          float t = Mathf.InverseLerp(w - blendDistance, w, x);
+          float t = Mathf.InverseLerp(w - blendDistance - 1, w - 1, x);
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * inverseT);
 
-          float[] blends = bottom.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[2].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[btmLayerIndex]; i++)
             map[x, y, btmLayerTextureIndex + i] = Mathf.Max(map[x, y, btmLayerTextureIndex + i], blends[i] * t);
 
@@ -224,49 +266,49 @@ public abstract class Biome {
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
 
-          float[] blends = topLeft.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[4].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[topleftLayerIndex]; i++)
             map[x, y, topleftLayerTextureIndex + i] = Mathf.Max(map[x, y, topleftLayerTextureIndex + i], blends[i] * inverseT);
 
 
         } else if (toprightLayerIndex != -1 && y > h - blendDistance && x < blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
-          float t = Mathf.Max(Mathf.InverseLerp(h - (blendDistance / 2), h - blendDistance, y), Mathf.InverseLerp(blendDistance / 2, blendDistance, x));
+          float t = Mathf.Max(Mathf.InverseLerp(h - 1 - (blendDistance / 2), h - 1 - blendDistance, y), Mathf.InverseLerp(blendDistance / 2, blendDistance, x));
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
 
-          float[] blends = topRight.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[5].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[toprightLayerIndex]; i++)
             map[x, y, toprightLayerTextureIndex + i] = Mathf.Max(map[x, y, toprightLayerTextureIndex + i], blends[i] * inverseT);
 
 
         } else if (btmleftLayerIndex != -1 && y < blendDistance && x > w - blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
-          float t = Mathf.Max(Mathf.InverseLerp(blendDistance / 2, blendDistance, y), Mathf.InverseLerp(w - (blendDistance / 2), w - blendDistance, x));
+          float t = Mathf.Max(Mathf.InverseLerp(blendDistance / 2, blendDistance, y), Mathf.InverseLerp(w - 1 - (blendDistance / 2), w - 1 - blendDistance, x));
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
 
-          float[] blends = btmLeft.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[6].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[btmleftLayerIndex]; i++)
             map[x, y, btmleftLayerTextureIndex + i] = Mathf.Max(map[x, y, btmleftLayerTextureIndex + i], blends[i] * inverseT);
 
 
         } else if (btmrightLayerIndex != -1 && y > h - blendDistance && x > w - blendDistance) {
           float mask = sampleBlendMask((float)x / (float)w, (float)y / (float)h);
-          float t = Mathf.Max(Mathf.InverseLerp(h - (blendDistance / 2), h - blendDistance, y), Mathf.InverseLerp(w - (blendDistance / 2), w - blendDistance, x));
+          float t = Mathf.Max(Mathf.InverseLerp(h - 1 - (blendDistance / 2), h - 1 - blendDistance, y), Mathf.InverseLerp(w - 1 - (blendDistance / 2), w - 1 - blendDistance, x));
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
           for (var i = 0; i < numLayers; i++)
             map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
 
-          float[] blends = btmRight.biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
+          float[] blends = chunks[7].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[btmrightLayerIndex]; i++)
             map[x, y, btmrightLayerTextureIndex + i] = Mathf.Max(map[x, y, btmrightLayerTextureIndex + i], blends[i] * inverseT);
         }

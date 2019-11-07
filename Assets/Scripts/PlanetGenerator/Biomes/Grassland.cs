@@ -97,21 +97,13 @@ public class Grassland : Biome {
   public override float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights) {
     float[] toReturn = new float[2] { 0, 0 };
 
-    // Get the normalized terrain coordinate that
-    // corresponds to the the point.
-    float normX = x * 1.0f / (terrainData.alphamapWidth - 1);
-    float normY = y * 1.0f / (terrainData.alphamapHeight - 1);
+    int sampleX = (int)(((float)x / (float)(terrainData.alphamapWidth - 1)) * (float)(terrainData.heightmapWidth - 1));
+    int sampleY = (int)(((float)y / (float)(terrainData.alphamapHeight - 1)) * (float)(terrainData.heightmapHeight - 1));
+    float test1 = getSteepness(sampleX, sampleY, terrainData.heightmapWidth, terrainData.heightmapHeight, heights, terrainData.size);
 
-    // Get the steepness value at the normalized coordinate.
-    float angle = terrainData.GetSteepness(normX, normY);
-
-    // Steepness is given as an angle, 0..90 degrees. Divide
-    // by 90 to get an alpha blending value in the range 0..1.
-    float frac = angle / 90.0f;
-    float normalized = Mathf.InverseLerp(-0.3f, 0.3f, frac);
+    float normalized = Mathf.InverseLerp(0, 1, test1);
     toReturn[0] = normalized;
     toReturn[1] = 1f - normalized;
-
     return toReturn;
   }
 }
