@@ -107,15 +107,8 @@ public abstract class Biome {
     int totalNumLayers = terrain.terrainData.terrainLayers.Count();
     float[,,] map = new float[w, h, totalNumLayers];
     Vector2 center = new Vector2(halfWidth, halfHeight);
-
-    // Chunk top = null;
-    // Chunk right = null;
-    // Chunk bottom = null;
-    // Chunk left = null;
-    // Chunk topLeft = null;
-    // Chunk topRight = null;
-    // Chunk btmLeft = null;
-    // Chunk btmRight = null;
+    int numLayers = getNumLayers();
+    int blendDistance = 200;
 
     Chunk[] chunks = new Chunk[] {
       null, // Top - 0
@@ -127,15 +120,6 @@ public abstract class Biome {
       null, // Btm Left - 6
       null // Btm Right - 7
     };
-
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] - 1 }, out top);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] }, out right);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] + 1 }, out bottom);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] }, out left);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] - 1 }, out topLeft);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] - 1 }, out topRight);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] - 1, positinInDictionary[1] + 1 }, out btmLeft);
-    // chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] + 1 }, out btmRight);
 
     chunksDict.TryGetValue(new int[] { positinInDictionary[0], positinInDictionary[1] - 1 }, out chunks[0]);
     chunksDict.TryGetValue(new int[] { positinInDictionary[0] + 1, positinInDictionary[1] }, out chunks[1]);
@@ -164,8 +148,7 @@ public abstract class Biome {
       if (chunks[i] != null && chunks[i].biome.type <= type)
         chunks[i] = null;
 
-    int numLayers = getNumLayers();
-    int blendDistance = 400;
+
     int topLayerIndex = chunks[0] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[0].biome.type) : -1;
     int topLayerTextureIndex = chunks[0] != null ? numLayers + otherBiomes.Sum(biome => biome.type < chunks[0].biome.type ? biome.getNumLayers() : 0) : -1;
     int rightLayerIndex = chunks[1] != null ? otherBiomes.FindIndex(biome => biome.type == chunks[1].biome.type) : -1;
@@ -263,8 +246,9 @@ public abstract class Biome {
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
-          for (var i = 0; i < numLayers; i++)
-            map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
+          for (var i = 0; i < totalNumLayers; i++)
+            if (i < topleftLayerTextureIndex || i >= (topleftLayerTextureIndex + layerIndices[topleftLayerIndex]))
+              map[x, y, i] = Mathf.Min(map[x, y, i], map[x, y, i] * t);
 
           float[] blends = chunks[4].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[topleftLayerIndex]; i++)
@@ -277,8 +261,9 @@ public abstract class Biome {
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
-          for (var i = 0; i < numLayers; i++)
-            map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
+          for (var i = 0; i < totalNumLayers; i++)
+            if (i < toprightLayerTextureIndex || i >= (toprightLayerTextureIndex + layerIndices[toprightLayerIndex]))
+              map[x, y, i] = Mathf.Min(map[x, y, i], map[x, y, i] * t);
 
           float[] blends = chunks[5].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[toprightLayerIndex]; i++)
@@ -291,8 +276,9 @@ public abstract class Biome {
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
-          for (var i = 0; i < numLayers; i++)
-            map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
+          for (var i = 0; i < totalNumLayers; i++)
+            if (i < btmleftLayerTextureIndex || i >= (btmleftLayerTextureIndex + layerIndices[btmleftLayerIndex]))
+              map[x, y, i] = Mathf.Min(map[x, y, i], map[x, y, i] * t);
 
           float[] blends = chunks[6].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[btmleftLayerIndex]; i++)
@@ -305,8 +291,9 @@ public abstract class Biome {
           t = Mathf.Lerp(t, Mathf.Max(t, mask), t);
           float inverseT = 1.0f - t;
 
-          for (var i = 0; i < numLayers; i++)
-            map[x, y, i] = Mathf.Min(map[x, y, i], curBiomeLayers[i] * t);
+          for (var i = 0; i < totalNumLayers; i++)
+            if (i < btmrightLayerTextureIndex || i >= (btmrightLayerTextureIndex + layerIndices[btmrightLayerIndex]))
+              map[x, y, i] = Mathf.Min(map[x, y, i], map[x, y, i] * t);
 
           float[] blends = chunks[7].biome.blendLayer(x, y, terrain.terrainData, processedHeightmap.values);
           for (var i = 0; i < layerIndices[btmrightLayerIndex]; i++)
