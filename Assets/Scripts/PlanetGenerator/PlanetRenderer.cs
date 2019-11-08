@@ -325,7 +325,8 @@ public class PlanetRenderer : MonoBehaviour {
     terrain.treeCrossFadeLength = 5;
     terrain.treeMaximumFullLODCount = 50;
     terrain.drawInstanced = false;
-    // terrain.materialTemplate = Resources.Load<Material>("Terrain/TerrainMaterial");
+    terrain.materialTemplate = Resources.Load<Material>("Terrain/TerrainMaterial");
+    terrain.materialTemplate.SetTexture("_SecondTex", Resources.Load<Texture2D>("Terrain/Textures/terrain-tiling-noise"));
     terrain.terrainData.alphamapResolution = 1024;
 
     // Create terrain collider

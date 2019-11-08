@@ -1,10 +1,11 @@
 ﻿// Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "Nature/Terrain/Standard2" {
+Shader "Nature/Terrain/Standard" {
     Properties {
         // used in fallback on old cards & base map
         [HideInInspector] _MainTex ("BaseMap (RGB)", 2D) = "white" {}
         [HideInInspector] _Color ("Main Color", Color) = (1,1,1,1)
+        _SecondTex("Variation Noise", 2D) = "white" {}
     }
 
     SubShader {
@@ -27,6 +28,9 @@ Shader "Nature/Terrain/Standard2" {
         #define TERRAIN_STANDARD_SHADER
         #define TERRAIN_INSTANCED_PERPIXEL_NORMAL
         #define TERRAIN_SURFACE_OUTPUT SurfaceOutputStandard
+
+        sampler2D _SecondTex;
+
         #include "CustomTerrainSplatmapCommon.cginc"
 
         half _Metallic0;
@@ -49,8 +53,6 @@ Shader "Nature/Terrain/Standard2" {
             o.Alpha = weight;
             o.Smoothness = mixedDiffuse.a;
             o.Metallic = dot(splat_control, half4(_Metallic0, _Metallic1, _Metallic2, _Metallic3));
-
-            o.Smoothness = 0;
         }
         ENDCG
 

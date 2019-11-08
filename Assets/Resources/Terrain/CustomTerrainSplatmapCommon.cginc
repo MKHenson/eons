@@ -110,6 +110,71 @@ float4 lerp(float4 input1, float4 input2, float t) {
     return input1 * (1 - t) + input2 * t;
 }
 
+fixed4 hash4(fixed2 p) {
+        return frac(sin(fixed4(
+                        1.0 + dot(p,fixed2(37.0,17.0)),
+                        2.0 + dot(p,fixed2(11.0,47.0)),
+                        3.0 + dot(p,fixed2(41.0,29.0)),
+                        4.0 + dot(p,fixed2(23.0,31.0))))*103.0);
+    }
+
+float sum( float3 v ) { 
+        return v.x+v.y+v.z; 
+    }
+
+float4 textureNoTile2( sampler2D samp, in float2 uv )
+{
+    // sample variation pattern    
+    float k = tex2D( _SecondTex, 0.005f * uv ).x; // cheap (cache friendly) lookup    
+    
+    // compute index    
+    float index = k * 8.0f;
+    float i = floor( index );
+    float f = frac( index );
+
+    // offsets for the different virtual patterns    
+    float2 offa = sin( float2( 3.0, 7.0 ) * ( i + 0.0 )); // can replace with any other hash    
+    float2 offb = sin( float2( 3.0, 7.0 ) * ( i + 1.0 )); // can replace with any other hash    
+
+    // compute derivatives for mip-mapping    
+    float2 dx = ddx(uv), dy = ddy(uv);
+    
+    // sample the two closest virtual patterns    
+    float4 cola = tex2Dgrad( samp, uv + offa, dx, dy );
+    float4 colb = tex2Dgrad( samp, uv + offb, dx, dy );
+
+    // interpolate between the two virtual patterns    
+    return lerp( cola, colb, smoothstep( 0.2f, 0.8f, f - 0.1f * sum(cola-colb) ) );
+}
+
+float4 textureNoTile( sampler2D samp, in float2 uv )
+{
+    fixed2 p = floor( uv );
+    fixed2 f = frac( uv );
+	
+    // derivatives (for correct mipmapping)
+    fixed2 ddxVal = ddx( uv );
+    fixed2 ddyVal = ddy( uv );
+    
+    // voronoi contribution
+    float4 va = float4( 0.0f, 0.0f, 0.0f, 0.0f ); 
+    float wt = 0.0f;
+    for( int j=-1; j<=1; j++ )
+    for( int i=-1; i<=1; i++ ) {
+        float2 g = float2( float(i), float(j) );
+        float4 o = hash4( p + g );
+        float2 r = g - f + o.xy;
+        float d = dot(r,r);
+        float w = exp(-5.0f * d );
+        float4 c = tex2Dgrad( samp, uv + o.zw, ddxVal, ddyVal );
+        va += w*c;
+        wt += w;
+    }
+	
+    // normalization
+    return va/wt;
+}
+
 #ifdef TERRAIN_STANDARD_SHADER
 void SplatmapMix(Input IN, half4 defaultAlpha, out half4 splat_control, out half weight, out fixed4 mixedDiffuse, inout fixed3 mixedNormal)
 #else
@@ -136,10 +201,10 @@ void SplatmapMix(Input IN, out half4 splat_control, out half weight, out fixed4 
 
     mixedDiffuse = 0.0f;
     #ifdef TERRAIN_STANDARD_SHADER
-        fixed4 splat0 = tex2D(_Splat0, uvSplat0);
-        fixed4 splat1 = tex2D(_Splat1, uvSplat1);
-        fixed4 splat2 = tex2D(_Splat2, uvSplat2);
-        fixed4 splat3 = tex2D(_Splat3, uvSplat3);
+        fixed4 splat0 = textureNoTile2(_Splat0, uvSplat0);
+        fixed4 splat1 = textureNoTile2(_Splat1, uvSplat1);
+        fixed4 splat2 = textureNoTile2(_Splat2, uvSplat2);
+        fixed4 splat3 = textureNoTile2(_Splat3, uvSplat3);
 
         // Set the base texture
         // // mixedDiffuse += splat_control.r * splat0 * half4(1.0, 1.0, 1.0, defaultAlpha.r);
@@ -163,10 +228,10 @@ void SplatmapMix(Input IN, out half4 splat_control, out half weight, out fixed4 
     #endif
 
     #ifdef _NORMALMAP
-        mixedNormal  = UnpackNormalWithScale(tex2D(_Normal0, uvSplat0), _NormalScale0) * splat_control.r;
-        mixedNormal += UnpackNormalWithScale(tex2D(_Normal1, uvSplat1), _NormalScale1) * splat_control.g;
-        mixedNormal += UnpackNormalWithScale(tex2D(_Normal2, uvSplat2), _NormalScale2) * splat_control.b;
-        mixedNormal += UnpackNormalWithScale(tex2D(_Normal3, uvSplat3), _NormalScale3) * splat_control.a;
+        mixedNormal  = UnpackNormalWithScale(textureNoTile2(_Normal0, uvSplat0), _NormalScale0) * splat_control.r;
+        mixedNormal += UnpackNormalWithScale(textureNoTile2(_Normal1, uvSplat1), _NormalScale1) * splat_control.g;
+        mixedNormal += UnpackNormalWithScale(textureNoTile2(_Normal2, uvSplat2), _NormalScale2) * splat_control.b;
+        mixedNormal += UnpackNormalWithScale(textureNoTile2(_Normal3, uvSplat3), _NormalScale3) * splat_control.a;
         mixedNormal.z += 1e-5f; // to avoid nan after normalizing
     #endif
 
