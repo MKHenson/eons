@@ -12,6 +12,7 @@ public class Chunk {
   public Biome biome;
   public bool loadingBiome;
   public bool requiresStitch;
+  public bool requiresBuilding;
 
   public Chunk(GameObject terrainGO, Biome biome) {
     this.terrainGO = terrainGO;
@@ -19,30 +20,22 @@ public class Chunk {
     loadingBiome = false;
     requiresStitch = false;
     loadingBiome = true;
+    requiresBuilding = true;
     this.terrain = terrainGO.GetComponent<Terrain>();
   }
 
-  public void load() {
+  public void load(Dictionary<int[], Chunk> chunks) {
+    requiresBuilding = false;
     int heightmapSize = terrain.terrainData.heightmapWidth;
     Vector2 offset = new Vector2(biome.position.y, -biome.position.x) * new Vector2(heightmapSize - 1, heightmapSize - 1);
 
     ThreadedDataRequester.requestData(() => {
-      return biome.generate(heightmapSize, offset);
+      return biome.generate(heightmapSize, offset, chunks);
     }, onBiomeLoaded);
-
-    // onBiomeLoaded(biome.generate(heightmapSize, offset));
   }
 
   private void onBiomeLoaded(object biomeData) {
     Biome biome = biomeData as Biome;
-
-    // // Create base later
-    // TerrainLayer[] layers = biome.generateLayers();
-    // terrain.terrainData.terrainLayers = layers;
-
-    // // Create the heights
-    // terrain.terrainData.SetHeights(0, 0, biome.processedHeightmap.values);
-    // terrain.Flush();
     requiresStitch = true;
     loadingBiome = false;
     if (Loaded != null)
@@ -99,16 +92,10 @@ public class PlanetRenderer : MonoBehaviour {
 
   private Biome getBiome(Vector2Int position) {
     Biome toReturn = null;
-    // if (position.x == -2 && position.y == -2)
-    //   toReturn = new Dessert();
-    // else if (position.x == 0 && position.y == 0)
-    //   toReturn = new Dessert();
     if (position.x == 0 && position.y == -2)
       toReturn = new Dessert();
     else if (position.x == -2 && position.y == 0)
       toReturn = new Dessert();
-    // else if (position.x == -1 && position.y == -2)
-    //   toReturn = new Dessert();
     else if ((position.x + 1) % 2 == 0 && (position.y + 1) % 2 == 0)
       toReturn = new Grassland();
     else
@@ -145,8 +132,6 @@ public class PlanetRenderer : MonoBehaviour {
           GameObject newTerrain = generateTerrain(cache, biome);
           chunk = new Chunk(newTerrain, biome);
           numBiomesLoading += 1;
-          chunk.Loaded += onChunkLoaded;
-          chunk.load();
           terrainChunkDictionary.Add(cache, chunk);
           visibleTerrainChunks.Add(chunk);
         } else {
@@ -155,6 +140,20 @@ public class PlanetRenderer : MonoBehaviour {
         }
 
         chunkMap[(int)x + 1, (int)z + 1] = chunk;
+      }
+    }
+
+    // If we have new terrains added we need to get the terrain dictionary
+    // and set their new neighbours
+    Dictionary<int[], Chunk> terrainDictionary = null;
+    if (numBiomesLoading > 0)
+      terrainDictionary = getTerrainsDictionary(visibleTerrainChunks);
+
+    // Load the biomes that need to be loaded
+    for (int i = 0, l = visibleTerrainChunks.Count; i < l; i++) {
+      if (visibleTerrainChunks[i].requiresBuilding) {
+        visibleTerrainChunks[i].Loaded += onChunkLoaded;
+        visibleTerrainChunks[i].load(terrainDictionary);
       }
     }
 
@@ -183,7 +182,6 @@ public class PlanetRenderer : MonoBehaviour {
                     chunksToStitch.Add(chunkMap[normalizedX, normalizedZ]);
               }
             }
-
         }
 
     if (chunksToStitch.Count > 0 && numBiomesLoading == 0) {
@@ -193,17 +191,17 @@ public class PlanetRenderer : MonoBehaviour {
       foreach (Chunk chunk in chunksToStitch)
         chunk.requiresStitch = false;
 
-      // Chunk[] terrains = chunksToStitch.Select(chunk => chunk).ToArray();
+      if (terrainDictionary == null)
+        terrainDictionary = getTerrainsDictionary(visibleTerrainChunks);
 
-      // stitchTerrains(terrains);
-      stitchTerrains(visibleTerrainChunks.ToArray());
+      stitchTerrains(terrainDictionary);
     }
 
     prevNormalizedPos.Set(normalizedXPos, normalizedZPos);
     forUpdate = false;
   }
 
-  private void stitchTerrains(Chunk[] _terrains) {
+  private Dictionary<int[], Chunk> getTerrainsDictionary(List<Chunk> _terrains) {
     Vector2 firstPosition;
     Dictionary<int[], Chunk> terrainDataDict = new Dictionary<int[], Chunk>(new IntArrayComparer());
 
@@ -248,22 +246,31 @@ public class PlanetRenderer : MonoBehaviour {
       item.Value.terrain.SetNeighbors(left != null ? left.terrain : null, top != null ? top.terrain : null, right != null ? right.terrain : null, bottom != null ? bottom.terrain : null);
     }
 
+    return terrainDataDict;
+  }
+
+  private void stitchTerrains(Dictionary<int[], Chunk> terrains) {
     // Perform the stitches
     ThreadedDataRequester.requestData(() => {
-      return Stitcher.StitchTerrain(terrainDataDict, 20);
+      return Stitcher.StitchTerrain(terrains, 20, Stitcher.StitchType.Trend);
     }, onStitchComplete);
+
+    // onStitchComplete(terrains);
   }
 
   void onStitchComplete(object chunks) {
     Dictionary<int[], Chunk> chunksDict = chunks as Dictionary<int[], Chunk>;
     foreach (var chunk in chunksDict) {
-
       chunk.Value.terrain.terrainData.SetHeights(0, 0, chunk.Value.biome.processedHeightmap.values);
 
-      // Blend the two terrain textures according to the steepness of
-      // the slope at each point.
-      chunk.Value.biome.generateDetails(chunk.Value.terrain, chunksDict);
+      // // Perform the stitches
+      // ThreadedDataRequester.requestData(() => {
+      //   return chunk.Value.biome.generateDetails(chunk.Value.terrain, chunksDict);
+      // }, biome => chunk.Value.terrain.Flush());
 
+      // // Blend the two terrain textures according to the steepness of
+      // // the slope at each point.
+      chunk.Value.biome.generateDetails(chunk.Value.terrain, chunksDict);
       chunk.Value.terrain.Flush();
     }
 

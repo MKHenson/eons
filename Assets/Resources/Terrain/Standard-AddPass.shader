@@ -25,7 +25,7 @@ Shader "Hidden/TerrainEngine/Splatmap/Standard-AddPass" {
         #define TERRAIN_SURFACE_OUTPUT SurfaceOutputStandard
 
         sampler2D _SecondTex;
-        
+
         #include "CustomTerrainSplatmapCommon.cginc"
 
         half _Metallic0;

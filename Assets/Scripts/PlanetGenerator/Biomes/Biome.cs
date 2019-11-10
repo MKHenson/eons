@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -16,16 +17,19 @@ public enum BiomeType {
 public abstract class Biome {
   protected BiomeType _type;
   protected HeightMap _heightMap;
+  public HeightmapSettings heightmapSettings;
   protected HeightMap _processedHeightMap;
   protected TerrainLayer[] _layers;
   protected Vector2Int _position;
   private float[,] blendMask;
+  private Dictionary<BiomeType, Nullable<HeightMap>> otherBiomeHeightmaps;
 
   public Biome(BiomeType type) {
     this._type = type;
+    otherBiomeHeightmaps = new Dictionary<BiomeType, Nullable<HeightMap>>();
   }
 
-  public Biome generate(int size, Vector2 offset) {
+  public Biome generate(int size, Vector2 offset, Dictionary<int[], Chunk> chunks) {
 
     HeightmapSettings maskSettings = new HeightmapSettings();
     maskSettings.heightMultiplier = 1f;
@@ -44,8 +48,19 @@ public abstract class Biome {
         blendMask[x, y] = blendMask[x, y] / maskHeightmap.maxValue;
 
 
-    _heightMap = generateHeightmap(size, offset);
+    heightmapSettings = generateHeightmap();
+    _heightMap = HeightMapGenerator.generateHeightmap(size, size, heightmapSettings, offset);
     _processedHeightMap = _heightMap.clone();
+
+    // // Add any neighbour chunk heightmaps that need to be blended in
+    // Chunk[] activeChunks = getActiveChunks(chunks);
+    // foreach (var chunk in activeChunks)
+    //   if (chunk != null && chunk.biome.type > type && !otherBiomeHeightmaps.ContainsKey(chunk.biome.type))
+    //     otherBiomeHeightmaps.Add(chunk.biome.type, HeightMapGenerator.generateHeightmap(size, size, chunk.biome.generateHeightmap(), new Vector2(position.y, -position.x) * new Vector2(size - 1, size - 1)));
+
+    // Blend Heightmaps
+    blendHeightmaps(size, chunks);
+
     return this;
   }
 
@@ -91,14 +106,8 @@ public abstract class Biome {
     return Mathf.Rad2Deg * steepness;
   }
 
-  void blendHeightmaps(Terrain terrain, List<Biome> otherBiomes, Dictionary<int[], Chunk> chunksDict) {
-    int w = terrain.terrainData.heightmapWidth;
-    int h = terrain.terrainData.heightmapHeight;
-    var heightmapValues = heightmap.values;
-    var processedValues = processedHeightmap.values;
+  private Chunk[] getActiveChunks(Dictionary<int[], Chunk> chunksDict) {
     int[] positinInDictionary = chunksDict.FirstOrDefault(x => x.Value.biome == this).Key;
-    int blendDistance = 200;
-
     Chunk[] chunks = new Chunk[] {
       null, // Top - 0
       null, // Right - 1
@@ -137,6 +146,22 @@ public abstract class Biome {
       if (chunks[i] != null && chunks[i].biome.type <= type)
         chunks[i] = null;
 
+    return chunks;
+  }
+
+  public void blendHeightmaps(int size, Dictionary<int[], Chunk> chunksDict) {
+    int w = size;
+    int h = size;
+    var heightmapValues = heightmap.values;
+    var processedValues = processedHeightmap.values;
+    int blendDistance = 200;
+
+    Chunk[] chunks = getActiveChunks(chunksDict);
+
+    // Add any neighbour chunk heightmaps that need to be blended in
+    for (int i = 0, l = chunks.Length; i < l; i++)
+      if (chunks[i] != null && !otherBiomeHeightmaps.ContainsKey(chunks[i].biome.type))
+        otherBiomeHeightmaps.Add(chunks[i].biome.type, HeightMapGenerator.generateHeightmap(w, h, chunks[i].biome.generateHeightmap(), new Vector2(position.y, -position.x) * new Vector2(w - 1, w - 1)));
 
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
@@ -146,17 +171,47 @@ public abstract class Biome {
         // left
         if (chunks[3] != null && y < blendDistance) {
           float t = Mathf.InverseLerp(0, blendDistance, y);
-          processedValues[x, y] = Mathf.Lerp(chunks[3].biome.heightmap.values[x, y], processedValues[x, y], t);
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[3].biome.type].Value.values[x, y], processedValues[x, y], t);
         }
-        // right
-        else if (chunks[1] != null && y > h - blendDistance) {
+        // Right
+        else if (chunks[1] != null && y >= h - blendDistance) {
           float t = Mathf.InverseLerp(h - blendDistance - 1, h - 1, y);
-          processedValues[x, y] = Mathf.Lerp(chunks[1].biome.heightmap.values[x, y], processedValues[x, y], t);
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[1].biome.type].Value.values[x, y], processedValues[x, y], 1 - t);
+        }
+        // top
+        if (chunks[0] != null && x < blendDistance) {
+          float t = Mathf.InverseLerp(0, blendDistance, x);
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[0].biome.type].Value.values[x, y], processedValues[x, y], t);
+        }
+        // btm
+        else if (chunks[2] != null && x >= w - blendDistance) {
+          float t = Mathf.InverseLerp(w - blendDistance - 1, w - 1, x);
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[2].biome.type].Value.values[x, y], processedValues[x, y], 1 - t);
+        }
+
+        // Top left
+        if (chunks[4] != null && y < blendDistance && x < blendDistance) {
+          float t = Mathf.Max(Mathf.InverseLerp(blendDistance / 2, blendDistance, x), Mathf.InverseLerp(blendDistance / 2, blendDistance, y));
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[4].biome.type].Value.values[x, y], processedValues[x, y], t);
+        }
+        // Btm Left
+        else if (chunks[6] != null && y < blendDistance && x >= w - 1 - blendDistance) {
+          float t = Mathf.Max(Mathf.InverseLerp(blendDistance / 2, blendDistance, y), Mathf.InverseLerp(w - 2 - (blendDistance / 2), w - 2 - blendDistance, x));
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[6].biome.type].Value.values[x, y], processedValues[x, y], t);
+        }
+
+        // Top Right
+        else if (chunks[5] != null && y >= h - 1 - blendDistance && x < blendDistance) {
+          float t = Mathf.Max(Mathf.InverseLerp(h - 1 - (blendDistance / 2), h - 1 - blendDistance, y), Mathf.InverseLerp(blendDistance / 2, blendDistance, x));
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[5].biome.type].Value.values[x, y], processedValues[x, y], t);
+        }
+        // Btm Right
+        else if (chunks[7] != null && y >= h - 1 - blendDistance && x >= w - 1 - blendDistance) {
+          float t = Mathf.Max(Mathf.InverseLerp(h - 1 - (blendDistance / 2), h - 1 - blendDistance, y), Mathf.InverseLerp(w - 1 - (blendDistance / 2), w - 1 - blendDistance, x));
+          processedValues[x, y] = Mathf.Lerp(otherBiomeHeightmaps[chunks[7].biome.type].Value.values[x, y], processedValues[x, y], t);
         }
       }
     }
-
-    terrain.terrainData.SetHeights(0, 0, processedHeightmap.values);
   }
 
   protected void blendTextures(Terrain terrain, List<Biome> otherBiomes, int[] layerIndices, Dictionary<int[], Chunk> chunksDict) {
@@ -169,7 +224,7 @@ public abstract class Biome {
     float[,,] map = new float[w, h, totalNumLayers];
     Vector2 center = new Vector2(halfWidth, halfHeight);
     int numLayers = getNumLayers();
-    int blendDistance = 200;
+    int blendDistance = 300;
 
     Chunk[] chunks = new Chunk[] {
       null, // Top - 0
@@ -363,7 +418,7 @@ public abstract class Biome {
   public abstract TerrainLayer[] generateLayers();
   public abstract int getNumLayers();
 
-  public virtual void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
+  public virtual Biome generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
     // Create texture layers
     List<TerrainLayer> layers = new List<TerrainLayer>();
     TerrainLayer[] baseLayers = this.generateLayers();
@@ -399,12 +454,10 @@ public abstract class Biome {
 
     terrain.terrainData.terrainLayers = layers.ToArray();
 
-    // Blend Heightmaps 
-    blendHeightmaps(terrain, sortedList, chunksDict);
-
     // Blend the terrain layers
     blendTextures(terrain, sortedList, layerIndices, chunksDict);
+    return this;
   }
 
-  public abstract HeightMap generateHeightmap(int size, Vector2 offset);
+  public abstract HeightmapSettings generateHeightmap();
 }

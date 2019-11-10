@@ -11,9 +11,17 @@ public class Grassland : Biome {
   private static Texture2D erosionMap;
 
   public Grassland() : base(BiomeType.Grassland) {
+    if (!grass) {
+      grassDetail1 = Resources.Load<Texture2D>("Terrain/Textures/grass-billboard-1");
+      grass = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless");
+      grassNormalMap = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-norm");
+      grass2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2");
+      grassNormalMap2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2-norm");
+      erosionMap = Resources.Load<Texture2D>("Terrain/Textures/erosion-map2");
+    }
   }
 
-  public override HeightMap generateHeightmap(int size, Vector2 offset) {
+  public override HeightmapSettings generateHeightmap() {
     HeightmapSettings settings = new HeightmapSettings();
     settings.heightMultiplier = 0.2f;
     settings.useFalloff = true;
@@ -24,7 +32,7 @@ public class Grassland : Biome {
     settings.noiseSettings.persistance = 0.6f;
 
     settings.heightCurve = new AnimationCurve(new Keyframe[2] { new Keyframe(0, 0), new Keyframe(1, 1) });
-    return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
+    return settings;
   }
 
   public override TerrainLayer[] generateLayers() {
@@ -32,15 +40,6 @@ public class Grassland : Biome {
         new TerrainLayer(),
         new TerrainLayer()
     };
-
-    if (!grass) {
-      grassDetail1 = Resources.Load<Texture2D>("Terrain/Textures/grass-billboard-1");
-      grass = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless");
-      grassNormalMap = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-norm");
-      grass2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2");
-      grassNormalMap2 = Resources.Load<Texture2D>("Terrain/Textures/grass-seamless-2-norm");
-      erosionMap = Resources.Load<Texture2D>("Terrain/Textures/erosion-map2");
-    }
 
     toReturn[0].diffuseTexture = grass;
     toReturn[0].normalMapTexture = grassNormalMap;
@@ -59,7 +58,7 @@ public class Grassland : Biome {
     return 2;
   }
 
-  public override void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
+  public override Biome generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
 
     base.generateDetails(terrain, chunksDict);
 
@@ -92,6 +91,7 @@ public class Grassland : Biome {
     terrain.terrainData.detailPrototypes = detailPrototypes;
     terrain.terrainData.SetDetailLayer(0, 0, 0, grass1Locations);
     terrain.terrainData = terrain.terrainData;
+    return this;
   }
 
   public override float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights) {

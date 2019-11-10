@@ -9,9 +9,15 @@ public class Dessert : Biome {
   private static (float start, float end)[] layerGradients = new (float start, float end)[] { (-.2f, 0.5f), (0.5f, 1f) };
 
   public Dessert() : base(BiomeType.Dessert) {
+    if (!grass) {
+      grass = Resources.Load<Texture2D>("Terrain/Textures/sand");
+      grassNormalMap = Resources.Load<Texture2D>("Terrain/Textures/sand-normal");
+      snow = Resources.Load<Texture2D>("Terrain/Textures/sand-seamless-2");
+      snowNormalMap = Resources.Load<Texture2D>("Terrain/Textures/sand-seamless-2-normal");
+    }
   }
 
-  public override HeightMap generateHeightmap(int size, Vector2 offset) {
+  public override HeightmapSettings generateHeightmap() {
     HeightmapSettings settings = new HeightmapSettings();
     settings.heightMultiplier = 0.2f;
     settings.useFalloff = true;
@@ -23,7 +29,7 @@ public class Dessert : Biome {
 
     settings.heightCurve = new AnimationCurve(new Keyframe[] { new Keyframe(0, 0), new Keyframe(0.5f, 0.6f), new Keyframe(1, 1) });
 
-    return HeightMapGenerator.generateHeightmap(size, size, settings, offset);
+    return settings;
   }
 
   public override TerrainLayer[] generateLayers() {
@@ -32,12 +38,7 @@ public class Dessert : Biome {
         new TerrainLayer()
     };
 
-    if (!grass) {
-      grass = Resources.Load<Texture2D>("Terrain/Textures/sand");
-      grassNormalMap = Resources.Load<Texture2D>("Terrain/Textures/sand-normal");
-      snow = Resources.Load<Texture2D>("Terrain/Textures/sand-seamless-2");
-      snowNormalMap = Resources.Load<Texture2D>("Terrain/Textures/sand-seamless-2-normal");
-    }
+
 
     toReturn[0].diffuseTexture = grass;
     toReturn[0].normalMapTexture = grassNormalMap;
@@ -60,13 +61,13 @@ public class Dessert : Biome {
     return 2;
   }
 
-  public override void generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
+  public override Biome generateDetails(Terrain terrain, Dictionary<int[], Chunk> chunksDict) {
+    base.generateDetails(terrain, chunksDict);
 
-    // Create base later
-    TerrainLayer[] layers = this.generateLayers();
-    terrain.terrainData.terrainLayers = layers;
-
-    blendTextures(terrain, processedHeightmap.values);
+    // // Create base later
+    // TerrainLayer[] layers = this.generateLayers();
+    // terrain.terrainData.terrainLayers = layers;
+    // blendTextures(terrain, processedHeightmap.values);
 
     terrain.terrainData.wavingGrassTint = Color.white;
     terrain.terrainData.wavingGrassSpeed = 1;
@@ -75,6 +76,7 @@ public class Dessert : Biome {
 
     terrain.terrainData = terrain.terrainData;
     terrain.Flush();
+    return this;
   }
 
   public override float[] blendLayer(int x, int y, TerrainData terrainData, float[,] heights) {
@@ -90,18 +92,18 @@ public class Dessert : Biome {
     return toReturn;
   }
 
-  private void blendTextures(Terrain terrain, float[,] heights) {
-    float[,,] map = new float[terrain.terrainData.alphamapWidth, terrain.terrainData.alphamapHeight, 2];
+  // private void blendTextures(Terrain terrain, float[,] heights) {
+  //   float[,,] map = new float[terrain.terrainData.alphamapWidth, terrain.terrainData.alphamapHeight, 2];
 
-    // For each point on the alphamap...
-    for (int y = 0; y < terrain.terrainData.alphamapHeight; y++) {
-      for (int x = 0; x < terrain.terrainData.alphamapWidth; x++) {
-        float[] blends = blendLayer(x, y, terrain.terrainData, heights);
-        for (uint i = 0; i < blends.Length; i++)
-          map[x, y, i] = blends[i];
-      }
-    }
+  //   // For each point on the alphamap...
+  //   for (int y = 0; y < terrain.terrainData.alphamapHeight; y++) {
+  //     for (int x = 0; x < terrain.terrainData.alphamapWidth; x++) {
+  //       float[] blends = blendLayer(x, y, terrain.terrainData, heights);
+  //       for (uint i = 0; i < blends.Length; i++)
+  //         map[x, y, i] = blends[i];
+  //     }
+  //   }
 
-    terrain.terrainData.SetAlphamaps(0, 0, map);
-  }
+  //   terrain.terrainData.SetAlphamaps(0, 0, map);
+  // }
 }

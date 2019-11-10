@@ -30,7 +30,7 @@ Shader "Nature/Terrain/Standard" {
         #define TERRAIN_SURFACE_OUTPUT SurfaceOutputStandard
 
         sampler2D _SecondTex;
-        
+
         #include "CustomTerrainSplatmapCommon.cginc"
 
         half _Metallic0;
@@ -43,7 +43,7 @@ Shader "Nature/Terrain/Standard" {
         half _Smoothness2;
         half _Smoothness3;
 
-        
+
 
         void surf (Input IN, inout SurfaceOutputStandard o) {
             half4 splat_control;
