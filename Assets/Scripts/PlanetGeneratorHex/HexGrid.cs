@@ -28,7 +28,7 @@ public class HexGrid : MonoBehaviour {
   }
 
   void Start() {
-    hexMesh.triangulate(cells);
+    hexMesh.Triangulate(cells);
   }
 
   public void ColorCell(Vector3 position, Color color) {
@@ -39,7 +39,7 @@ public class HexGrid : MonoBehaviour {
     int index = coordinates.x + coordinates.z * width + coordinates.z / 2;
     HexCell cell = cells[index];
     cell.color = color;
-    hexMesh.triangulate(cells);
+    hexMesh.Triangulate(cells);
   }
 
   private void createCell(int x, int z, int i) {
@@ -53,6 +53,23 @@ public class HexGrid : MonoBehaviour {
     cell.transform.localPosition = position;
     cell.coordinates = HexCoordinates.fromOffsetCoordinates(x, z);
     cell.color = defaultColor;
+
+    if (x > 0) {
+      cell.SetNeighbor(HexDirection.W, cells[i - 1]);
+    }
+    if (z > 0) {
+      if ((z & 1) == 0) {
+        cell.SetNeighbor(HexDirection.SE, cells[i - width]);
+        if (x > 0) {
+          cell.SetNeighbor(HexDirection.SW, cells[i - width - 1]);
+        }
+      } else {
+        cell.SetNeighbor(HexDirection.SW, cells[i - width]);
+        if (x < width - 1) {
+          cell.SetNeighbor(HexDirection.SE, cells[i - width + 1]);
+        }
+      }
+    }
 
     Text label = Instantiate<Text>(cellLabelPrefab);
     label.rectTransform.SetParent(gridCanvas.transform, false);
