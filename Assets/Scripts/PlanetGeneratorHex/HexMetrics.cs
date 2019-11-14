@@ -12,6 +12,8 @@ public static class HexMetrics {
   public const int TERRACE_STEPS = TERRACES_PER_SLOPE * 2 + 1;
   public const float HORIZONTAL_TERRACE_STEP_SIZE = 1f / TERRACE_STEPS;
   public const float VERTICAL_TERRACE_STEP_SIZE = 1f / (TERRACES_PER_SLOPE + 1);
+  public const float CELL_PERTURB_STRENGTH = 5f;
+  public const float NOISE_SCALE = 0.003f;
 
   static Vector3[] corners = {
       new Vector3(0f, 0f, OUTER_RADIUS),
@@ -52,6 +54,13 @@ public static class HexMetrics {
       return HexEdgeType.Slope;
 
     return HexEdgeType.Cliff;
+  }
+
+  public static Vector4 SampleNoise(Vector3 position, Texture2D noiseSource) {
+    return noiseSource.GetPixelBilinear(
+      position.x * NOISE_SCALE,
+      position.z * NOISE_SCALE
+    );
   }
 
   public static Vector3 TerraceLerp(Vector3 a, Vector3 b, int step) {

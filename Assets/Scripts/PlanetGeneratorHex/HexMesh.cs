@@ -10,15 +10,26 @@ public class HexMesh : MonoBehaviour {
   List<Color> colors;
   MeshCollider meshCollider;
 
+  Noise3D noise3D;
+  Texture2D noiseSource;
+
   // Start is called before the first frame update
   void Awake() {
     GetComponent<MeshFilter>().mesh = hexMesh = new Mesh();
     GetComponent<MeshRenderer>().material = new Material(Shader.Find("Custom/VertexColors"));
+
+    noise3D = new Noise3D();
+    noiseSource = noise3D.GenerateTexture(transform, 512);
+
     meshCollider = gameObject.AddComponent<MeshCollider>();
     hexMesh.name = "HexMesh";
     vertices = new List<Vector3>();
     triangles = new List<int>();
     colors = new List<Color>();
+  }
+
+  void OnEnable() {
+    noiseSource = noise3D.GenerateTexture(transform, 512);
   }
 
   public void Triangulate(HexCell[] cells) {
@@ -36,6 +47,14 @@ public class HexMesh : MonoBehaviour {
     hexMesh.RecalculateNormals();
 
     meshCollider.sharedMesh = hexMesh;
+  }
+
+  Vector3 Perturb(Vector3 position) {
+    Vector4 sample = HexMetrics.SampleNoise(position, noiseSource);
+    position.x += (sample.x * 2f - 1f) * HexMetrics.CELL_PERTURB_STRENGTH;
+    // position.y += (sample.y * 2f - 1f) * HexMetrics.CELL_PERTURB_STRENGTH;
+    position.z += (sample.z * 2f - 1f) * HexMetrics.CELL_PERTURB_STRENGTH;
+    return position;
   }
 
   void Triangulate(HexCell cell) {
@@ -291,9 +310,9 @@ public class HexMesh : MonoBehaviour {
 
   void AddTriangle(Vector3 v1, Vector3 v2, Vector3 v3) {
     int vertexIndex = vertices.Count;
-    vertices.Add(v1);
-    vertices.Add(v2);
-    vertices.Add(v3);
+    vertices.Add(Perturb(v1));
+    vertices.Add(Perturb(v2));
+    vertices.Add(Perturb(v3));
     triangles.Add(vertexIndex);
     triangles.Add(vertexIndex + 1);
     triangles.Add(vertexIndex + 2);
@@ -301,10 +320,10 @@ public class HexMesh : MonoBehaviour {
 
   void AddQuad(Vector3 v1, Vector3 v2, Vector3 v3, Vector3 v4) {
     int vertexIndex = vertices.Count;
-    vertices.Add(v1);
-    vertices.Add(v2);
-    vertices.Add(v3);
-    vertices.Add(v4);
+    vertices.Add(Perturb(v1));
+    vertices.Add(Perturb(v2));
+    vertices.Add(Perturb(v3));
+    vertices.Add(Perturb(v4));
     triangles.Add(vertexIndex);
     triangles.Add(vertexIndex + 2);
     triangles.Add(vertexIndex + 1);
